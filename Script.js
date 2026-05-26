@@ -69,7 +69,38 @@ document.addEventListener('DOMContentLoaded', () => {
     updateVarCount(3);
     initExamples();
     translatePage();
+
+    // TEMA ESCURO: Inicialização
+    const savedTheme = localStorage.getItem("theme");
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    
+    if (savedTheme === "dark" || (!savedTheme && prefersDark)) {
+        document.documentElement.classList.add("dark");
+        const themeIcon = document.getElementById("themeIcon");
+        if(themeIcon) {
+            themeIcon.classList.remove("fa-moon");
+            themeIcon.classList.add("fa-sun");
+        }
+    }
 });
+
+// ==================== TEMA ESCURO (TOGGLE) ====================
+function toggleTheme() {
+    const htmlElement = document.documentElement;
+    const themeIcon = document.getElementById("themeIcon");
+    
+    htmlElement.classList.toggle("dark");
+    
+    if (htmlElement.classList.contains("dark")) {
+        themeIcon.classList.remove("fa-moon");
+        themeIcon.classList.add("fa-sun");
+        localStorage.setItem("theme", "dark");
+    } else {
+        themeIcon.classList.remove("fa-sun");
+        themeIcon.classList.add("fa-moon");
+        localStorage.setItem("theme", "light");
+    }
+}
 
 // ==================== VARIÁVEIS E TRADUÇÃO ====================
 function updateVarCount(count) {
@@ -101,7 +132,6 @@ function translatePage() {
     document.getElementById("stepsTitle").textContent = lang.stepsTitle;
     document.getElementById("footerText").textContent = lang.footerText;
 
-    // Botões
     const btnCalc = document.getElementById("btnCalculate");
     const btnClr = document.getElementById("btnClear");
     if (btnCalc) btnCalc.textContent = lang.calculate;
@@ -118,14 +148,10 @@ function changeLanguage() {
 // ==================== DETECÇÃO DE VARIÁVEIS ====================
 function extractVariables(expr) {
     const varSet = new Set();
-    
-    // Pega todas as letras (maiúsculas ou minúsculas)
     const matches = expr.match(/[a-zA-Z]/g) || [];
     
     matches.forEach(letter => {
         const upper = letter.toUpperCase();
-        
-        // Apenas remove palavras que realmente são operadores em português/inglês
         const forbidden = ['AND', 'OR', 'NOT', 'XOR', 'V', 'E', 'OU']; 
         
         if (!forbidden.includes(upper)) {
@@ -148,7 +174,7 @@ function evaluateExpression(expr, variables) {
         .replace(/<->/g, '===')
         .replace(/->/g, '<=')
         .replace(/v/g, '||').replace(/V/g, '||')
-        .replace(/ou/g, '||').replace(/OU/g, '||')   // suporte extra
+        .replace(/ou/g, '||').replace(/OU/g, '||')
         .replace(/\^/g, '&&')
         .replace(/\./g, '&&')
         .replace(/\+/g, '||')
@@ -158,7 +184,6 @@ function evaluateExpression(expr, variables) {
         .replace(/\|/g, '||')
         .replace(/!/g, '!');
 
-    // Substituição das variáveis (qualquer letra)
     currentVariables.forEach((varName, index) => {
         const val = variables[index] !== undefined ? variables[index] : 0;
         const regex = new RegExp(`(?<![a-zA-Z])${varName}(?![a-zA-Z])`, 'gi');
@@ -194,6 +219,15 @@ function calculateFromExpression() {
         const result = evaluateExpression(input, binary);
         if (result !== null) currentOutputs[i] = result;
     }
+    
+    // Atualiza rádio buttons visuais de acordo com o detectado
+    document.querySelectorAll('input[name="varCount"]').forEach(rb => {
+        if (parseInt(rb.value) === currentVarCount) rb.checked = true;
+    });
+    
+    const varsListEl = document.getElementById('varsList');
+    if(varsListEl) varsListEl.textContent = currentVariables.join(', ');
+
     renderAll();
 }
 
@@ -210,7 +244,7 @@ function renderTruthTable() {
     
     let html = `
         <thead>
-            <tr class="bg-gray-100 border-b-2 border-gray-200">
+            <tr class="bg-gray-100 border-b-2 border-gray-200 transition-colors duration-200">
                 ${varNames.map(v => `<th class="p-2 font-bold">${v}</th>`).join('')}
                 <th class="p-2 font-bold text-blue-600">S</th>
             </tr>
@@ -222,10 +256,10 @@ function renderTruthTable() {
     for (let i = 0; i < totalRows; i++) {
         const binary = i.toString(2).padStart(currentVarCount, '0').split('').map(Number);
         html += `
-            <tr class="truth-table-row border-b border-gray-100">
+            <tr class="truth-table-row border-b border-gray-100 transition-colors duration-200">
                 ${binary.map(b => `<td class="p-2">${b}</td>`).join('')}
                 <td class="p-2 cursor-pointer font-bold hover:bg-blue-50 transition" onclick="toggleOutput(${i})">
-                    <span class="${currentOutputs[i] ? 'text-blue-600' : 'text-gray-400'}">${currentOutputs[i]}</span>
+                    <span class="${currentOutputs[i] ? 'text-blue-600' : 'text-gray-400 dark:text-gray-600'}">${currentOutputs[i]}</span>
                 </td>
             </tr>
         `;
@@ -249,7 +283,6 @@ function renderKMap() {
         return;
     }
 
-    // Gray Code sequences
     const grayCode2 = ['0', '1'];
     const grayCode4 = ['00', '01', '11', '10'];
 
@@ -258,37 +291,35 @@ function renderKMap() {
     let rowLabel = '', colLabel = '';
 
     if (varCount === 2) {
-        rowLabel = 'A'; 
-        colLabel = 'B';
+        rowLabel = currentVariables[0] || 'A'; 
+        colLabel = currentVariables[1] || 'B';
         rows = grayCode2; 
         cols = grayCode2;
     } else if (varCount === 3) {
-        rowLabel = 'A'; 
-        colLabel = 'BC';
+        rowLabel = currentVariables[0] || 'A'; 
+        colLabel = (currentVariables[1] || 'B') + (currentVariables[2] || 'C');
         rows = grayCode2; 
         cols = grayCode4;
     } else if (varCount === 4) {
-        rowLabel = 'AB'; 
-        colLabel = 'CD';
+        rowLabel = (currentVariables[0] || 'A') + (currentVariables[1] || 'B'); 
+        colLabel = (currentVariables[2] || 'C') + (currentVariables[3] || 'D');
         rows = grayCode4; 
         cols = grayCode4;
     }
 
-    html += `<div class="relative mx-auto">`;
+    html += `<div class="relative mx-auto mt-4">`;
     html += `<div class="absolute -top-6 left-1/2 transform -translate-x-1/2 text-sm font-bold text-blue-600">${colLabel}</div>`;
     html += `<div class="absolute top-1/2 -left-10 transform -translate-y-1/2 -rotate-90 text-sm font-bold text-blue-600">${rowLabel}</div>`;
 
     html += `<div class="grid" style="grid-template-columns: repeat(${cols.length + 1}, auto);">`;
-    html += `<div class="w-12 h-12"></div>`; // canto vazio
+    html += `<div class="w-12 h-12"></div>`; 
 
-    // Cabeçalho das colunas
     cols.forEach(c => {
-        html += `<div class="w-14 h-12 flex items-center justify-center font-mono text-sm text-gray-500">${c}</div>`;
+        html += `<div class="w-14 h-12 flex items-center justify-center font-mono text-sm text-gray-500 dark:text-gray-400">${c}</div>`;
     });
 
-    // Linhas do mapa
     rows.forEach((r) => {
-        html += `<div class="w-12 h-14 flex items-center justify-center font-mono text-sm text-gray-500">${r}</div>`;
+        html += `<div class="w-12 h-14 flex items-center justify-center font-mono text-sm text-gray-500 dark:text-gray-400">${r}</div>`;
         
         cols.forEach((c) => {
             const binary = r + c;
@@ -448,7 +479,7 @@ function initExamples() {
     ];
 
     container.innerHTML = examples.map((ex, idx) => `
-        <button onclick="loadExample(${idx})" class="text-left p-2 text-sm hover:bg-blue-50 border border-transparent hover:border-blue-200 rounded-lg transition">
+        <button onclick="loadExample(${idx})" class="text-left p-2 text-sm hover:bg-blue-50 border border-transparent hover:border-blue-200 rounded-lg transition dark:hover:bg-gray-700">
             <i class="fas fa-file-code text-blue-400 mr-2"></i> ${ex.name}
         </button>
     `).join('');
