@@ -236,6 +236,8 @@ function renderAll() {
     renderTruthTable();
     renderKMap();
     updateSimplifiedExpression();
+    renderSOP();
+    renderPOS();
 }
 
 function renderTruthTable() {
@@ -611,4 +613,332 @@ function toggleExamples() {
     } else {
         chevron.classList.add('rotate-180');
     }
+}
+
+// ==================== EXPORTAÇÃO PARA PDF (SOP E POS) ====================
+
+function downloadSOPPDF() {
+    const element = document.getElementById('sopCard');
+    if (!element) return;
+
+    const btn = element.querySelector('button');
+    const watermark = document.getElementById('watermarkSOP');
+    
+    // Procura a div que envolve a tabela e cria a barra de rolagem
+    const tableContainer = element.querySelector('.overflow-x-auto'); 
+    
+    // 1. PREPARAR O TERRENO (Remover limites e botões)
+    if (btn) btn.style.display = 'none';
+    if (watermark) {
+        watermark.classList.remove('hidden');
+        watermark.style.setProperty('display', 'block', 'important');
+    }
+    
+    // O SEGREDO DA CORREÇÃO: Forçar o card e a tabela a mostrarem 100% do conteúdo
+    element.classList.remove('overflow-hidden', 'h-full');
+    element.style.height = 'max-content';
+    if (tableContainer) {
+        tableContainer.classList.remove('overflow-x-auto');
+        tableContainer.style.overflow = 'visible';
+    }
+
+    const opt = {
+        margin: 10, 
+        filename: 'Soma_de_Produtos_SOP.pdf',
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, scrollY: 0 }, // scrollY: 0 ajuda a alinhar o print
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
+    // 2. TIRAR A "FOTO" E DEVOLVER TUDO AO NORMAL
+    setTimeout(() => {
+        html2pdf().set(opt).from(element).save().then(() => {
+            // Devolve o botão e esconde a marca d'água
+            if (btn) btn.style.display = 'flex';
+            if (watermark) {
+                watermark.classList.add('hidden');
+                watermark.style.removeProperty('display');
+            }
+            
+            // Devolve as restrições de tamanho da tela original
+            element.classList.add('overflow-hidden', 'h-full');
+            element.style.height = '';
+            if (tableContainer) {
+                tableContainer.classList.add('overflow-x-auto');
+                tableContainer.style.overflow = '';
+            }
+        });
+    }, 150); // 150ms dá o tempo exato para o navegador expandir a tabela antes do print
+}
+
+function downloadPOSPDF() {
+    const element = document.getElementById('posCard');
+    if (!element) return;
+
+    const btn = element.querySelector('button');
+    const watermark = document.getElementById('watermarkPOS');
+    const tableContainer = element.querySelector('.overflow-x-auto'); 
+    
+    // 1. PREPARAR O TERRENO
+    if (btn) btn.style.display = 'none';
+    if (watermark) {
+        watermark.classList.remove('hidden');
+        watermark.style.setProperty('display', 'block', 'important');
+    }
+    
+    // Forçar expansão total
+    element.classList.remove('overflow-hidden', 'h-full');
+    element.style.height = 'max-content';
+    if (tableContainer) {
+        tableContainer.classList.remove('overflow-x-auto');
+        tableContainer.style.overflow = 'visible';
+    }
+
+    const opt = {
+        margin: 10, 
+        filename: 'Produto_de_Somas_POS.pdf',
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, scrollY: 0 },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
+    // 2. TIRAR A "FOTO" E DEVOLVER TUDO AO NORMAL
+    setTimeout(() => {
+        html2pdf().set(opt).from(element).save().then(() => {
+            if (btn) btn.style.display = 'flex';
+            if (watermark) {
+                watermark.classList.add('hidden');
+                watermark.style.removeProperty('display');
+            }
+            
+            element.classList.add('overflow-hidden', 'h-full');
+            element.style.height = '';
+            if (tableContainer) {
+                tableContainer.classList.add('overflow-x-auto');
+                tableContainer.style.overflow = '';
+            }
+        });
+    }, 150);
+}
+
+// ==================== CÁLCULO DE SOP (Mintermos) ====================
+function renderSOP() {
+    const table = document.getElementById('sopTable');
+    const exprDiv = document.getElementById('sopExpression');
+    const defaultVars = ['A', 'B', 'C', 'D']; // Nossa rede de segurança
+    
+    // Cabeçalho
+    let html = `<thead><tr class="bg-gray-100 dark:bg-[#1e1e1e] text-gray-600 dark:text-gray-400 border-b border-gray-200 dark:border-[#3c3c3c]">
+                    <th class="p-2">m(i)</th>`;
+    
+    // Puxa as variáveis de forma segura
+    for (let j = 0; j < currentVarCount; j++) {
+        let varName = currentVariables[j] || defaultVars[j];
+        html += `<th class="p-2">${varName}</th>`;
+    }
+    html += `<th class="p-2 text-green-600 dark:text-green-400">Termo Produto</th></tr></thead><tbody>`;
+    
+    let terms = [];
+    let hasMinterms = false;
+
+    currentOutputs.forEach((out, i) => {
+        if (out === 1) {
+            hasMinterms = true;
+            let binaryStr = i.toString(2).padStart(currentVarCount, '0');
+            let term = '';
+            
+            let rowHtml = `<tr class="border-b border-gray-100 dark:border-[#3c3c3c] hover:bg-gray-50 dark:hover:bg-[#2a2a2a] transition-colors"><td class="p-2 font-mono text-gray-500">m${i}</td>`;
+            
+            for (let j = 0; j < currentVarCount; j++) {
+                let bit = binaryStr[j];
+                rowHtml += `<td class="p-2">${bit}</td>`;
+                
+                // Variável segura
+                let varName = currentVariables[j] || defaultVars[j];
+                term += (bit === '1') ? varName : `~${varName}`;
+                if (j < currentVarCount - 1) term += '.';
+            }
+            
+            rowHtml += `<td class="p-2 font-bold text-green-600 dark:text-green-400 font-mono">${term}</td></tr>`;
+            html += rowHtml;
+            terms.push(term);
+        }
+    });
+
+    html += '</tbody>';
+    table.innerHTML = hasMinterms ? html : `<tr><td colspan="${currentVarCount + 2}" class="p-4 text-gray-500 text-sm">Nenhum mintermo (S=1) encontrado.</td></tr>`;
+    exprDiv.innerHTML = hasMinterms ? terms.join(' + ') : '0';
+}
+
+// ==================== CÁLCULO DE POS (Maxtermos) ====================
+function renderPOS() {
+    const table = document.getElementById('posTable');
+    const exprDiv = document.getElementById('posExpression');
+    const defaultVars = ['A', 'B', 'C', 'D']; // Nossa rede de segurança
+    
+    // Cabeçalho
+    let html = `<thead><tr class="bg-gray-100 dark:bg-[#1e1e1e] text-gray-600 dark:text-gray-400 border-b border-gray-200 dark:border-[#3c3c3c]">
+                    <th class="p-2">M(i)</th>`;
+                    
+    // Puxa as variáveis de forma segura
+    for (let j = 0; j < currentVarCount; j++) {
+        let varName = currentVariables[j] || defaultVars[j];
+        html += `<th class="p-2">${varName}</th>`;
+    }
+    html += `<th class="p-2 text-red-600 dark:text-red-400">Termo Soma</th></tr></thead><tbody>`;
+    
+    let terms = [];
+    let hasMaxterms = false;
+
+    currentOutputs.forEach((out, i) => {
+        if (out === 0) {
+            hasMaxterms = true;
+            let binaryStr = i.toString(2).padStart(currentVarCount, '0');
+            let term = '(';
+            
+            let rowHtml = `<tr class="border-b border-gray-100 dark:border-[#3c3c3c] hover:bg-gray-50 dark:hover:bg-[#2a2a2a] transition-colors"><td class="p-2 font-mono text-gray-500">M${i}</td>`;
+            
+            for (let j = 0; j < currentVarCount; j++) {
+                let bit = binaryStr[j];
+                rowHtml += `<td class="p-2">${bit}</td>`;
+                
+                // Variável segura
+                let varName = currentVariables[j] || defaultVars[j];
+                term += (bit === '0') ? varName : `~${varName}`;
+                if (j < currentVarCount - 1) term += ' + ';
+            }
+            term += ')';
+            
+            rowHtml += `<td class="p-2 font-bold text-red-600 dark:text-red-400 font-mono">${term}</td></tr>`;
+            html += rowHtml;
+            terms.push(term);
+        }
+    });
+
+    html += '</tbody>';
+    table.innerHTML = hasMaxterms ? html : `<tr><td colspan="${currentVarCount + 2}" class="p-4 text-gray-500 text-sm">Nenhum maxtermo (S=0) encontrado.</td></tr>`;
+    exprDiv.innerHTML = hasMaxterms ? terms.join(' . ') : '1';
+}
+
+// ==================== EXPORTAÇÃO PARA PDF (DEFINITIVA - PÁGINA NA MEMÓRIA) ====================
+
+function downloadFullReport() {
+    // Altera o botão para mostrar que está a carregar
+    const btn = document.getElementById('btnFullReport');
+    const originalHtml = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processando...';
+    btn.style.pointerEvents = 'none';
+
+    // 1. Clonar os cartões (Copia os dados, mas não mexe no seu site)
+    const truthTable = document.getElementById('truthTableCard').cloneNode(true);
+    const kmap = document.getElementById('kmapCard').cloneNode(true);
+    const sop = document.getElementById('sopCard').cloneNode(true);
+    const pos = document.getElementById('posCard').cloneNode(true);
+    const steps = document.getElementById('resultSection').cloneNode(true);
+
+    const allClones = [truthTable, kmap, sop, pos, steps];
+
+    // 2. Limpeza brutal (O Exterminador de Modo Escuro)
+    allClones.forEach(clone => {
+        // Remove botões e marcas de água da cópia
+        clone.querySelectorAll('button').forEach(b => b.remove());
+        clone.querySelectorAll('[id^="watermark"]').forEach(w => w.remove());
+
+        // Força papel branco, borda leve e remove restrições de tamanho
+        clone.style.backgroundColor = '#ffffff';
+        clone.style.border = '1px solid #e5e7eb';
+        clone.style.borderRadius = '8px';
+        clone.style.padding = '20px';
+        clone.style.boxShadow = 'none';
+        clone.style.height = 'auto'; 
+
+        // Solta as tabelas (evita cortes nas bordas)
+        clone.querySelectorAll('.overflow-x-auto').forEach(sa => {
+            sa.className = ''; 
+            sa.style.overflow = 'visible';
+            sa.style.width = '100%';
+        });
+
+        // Arranca o Tailwind Dark Mode à força e pinta tudo de preto
+        clone.querySelectorAll('*').forEach(el => {
+            if (el.className && typeof el.className === 'string') {
+                el.className = el.className.replace(/dark:[^\s]+/g, '');
+            }
+            
+            // Mantém as células do mapa azuis
+            if (el.classList && el.classList.contains('active')) {
+                el.style.backgroundColor = '#3b82f6';
+                el.style.color = '#ffffff';
+            } else if (el.tagName !== 'I') { // Não pinta os ícones
+                el.style.color = '#000000';
+            }
+        });
+    });
+
+    // Configuração da aba de passos (garante que está visível na cópia)
+    steps.style.display = 'block';
+    steps.classList.remove('hidden');
+    steps.style.marginTop = '20px';
+    steps.style.backgroundColor = '#f8fafc';
+
+    // 3. Criar a Folha A4 em código (Nunca chega a ir para o ecrã)
+    const printContainer = document.createElement('div');
+    printContainer.style.width = '800px'; // Largura perfeita para A4 Retrato
+    printContainer.style.backgroundColor = '#ffffff';
+    printContainer.style.padding = '20px';
+    printContainer.style.fontFamily = 'sans-serif';
+
+    printContainer.innerHTML = `
+        <div style="text-align: center; margin-bottom: 20px;">
+            <h1 style="font-size: 26px; font-weight: bold; color: #2563eb; margin: 0;">Relatório de Álgebra Booleana</h1>
+            <p style="font-size: 14px; color: #6b7280; font-family: monospace; margin-top: 5px;">Simplificador Lógico - Ânima Study</p>
+        </div>
+
+        <div style="display: flex; gap: 20px; align-items: flex-start; width: 100%;">
+            <div id="print-tt" style="width: 50%;"></div>
+            <div id="print-kmap" style="width: 50%;"></div>
+        </div>
+
+        <div id="print-steps" style="width: 100%;"></div>
+
+        <div class="html2pdf__page-break"></div>
+
+        <div style="text-align: center; margin-bottom: 20px; padding-top: 20px;">
+            <h2 style="font-size: 20px; font-weight: bold; color: #2563eb;">Formas Canônicas (SOP e POS)</h2>
+        </div>
+        
+        <div style="display: flex; gap: 20px; align-items: flex-start; width: 100%;">
+            <div id="print-sop" style="width: 50%;"></div>
+            <div id="print-pos" style="width: 50%;"></div>
+        </div>
+    `;
+
+    // 4. Injeta as tabelas limpas nas devidas gavetas da folha
+    printContainer.querySelector('#print-tt').appendChild(truthTable);
+    printContainer.querySelector('#print-kmap').appendChild(kmap);
+    printContainer.querySelector('#print-steps').appendChild(steps);
+    printContainer.querySelector('#print-sop').appendChild(sop);
+    printContainer.querySelector('#print-pos').appendChild(pos);
+
+    // 5. Configuração Exata para Modo Retrato (Em Pé)
+    const opt = {
+        margin:       10, 
+        filename:     'Relatorio_Completo_Anima.pdf',
+        image:        { type: 'jpeg', quality: 1.0 },
+        html2canvas:  { scale: 2, useCORS: true }, 
+        pagebreak:    { mode: ['css', 'legacy'] }, // Avisa o motor para respeitar a quebra de página
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' } // Formato Retrato
+    };
+
+    // 6. GERAÇÃO (Direto da memória para o seu PC)
+    html2pdf().set(opt).from(printContainer).save().then(() => {
+        // Oculta o estado de "Processando..." do botão e restaura
+        btn.innerHTML = originalHtml;
+        btn.style.pointerEvents = 'auto';
+    }).catch(err => {
+        console.error("Erro na geração do PDF:", err);
+        btn.innerHTML = originalHtml;
+        btn.style.pointerEvents = 'auto';
+        alert("Ocorreu um erro ao gerar o PDF. Verifique a consola.");
+    });
 }
