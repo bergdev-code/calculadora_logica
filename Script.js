@@ -2,7 +2,7 @@
 let currentVarCount = 3;
 let currentOutputs = [];
 let currentExpression = "";
-let currentVariables = []; 
+let currentVariables = [];
 
 // ==================== TRADUÇÕES ====================
 const translations = {
@@ -23,7 +23,7 @@ const translations = {
         noMinterms: "Nenhum mintermo selecionado (saída é sempre 0).",
         allMinterms: "Todos os mintermos selecionados (saída é sempre 1).",
         footerText: "Desenvolvido para auxílio nos estudos da UC: Matemática Computacional Aplicada - Ânima",
-        
+
         mintermsIdentified: "Mintermos identificados",
         stage: "Estágio",
         combinedDoubles: "Combinadas",
@@ -48,7 +48,7 @@ const translations = {
         noMinterms: "No minterms selected (output is always 0).",
         allMinterms: "All minterms selected (output is always 1).",
         footerText: "Developed to assist studies in Applied Computational Mathematics - Ânima",
-        
+
         mintermsIdentified: "Identified minterms",
         stage: "Stage",
         combinedDoubles: "Combined",
@@ -73,11 +73,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // TEMA ESCURO: Inicialização
     const savedTheme = localStorage.getItem("theme");
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    
+
     if (savedTheme === "dark" || (!savedTheme && prefersDark)) {
         document.documentElement.classList.add("dark");
         const themeIcon = document.getElementById("themeIcon");
-        if(themeIcon) {
+        if (themeIcon) {
             themeIcon.classList.remove("fa-moon");
             themeIcon.classList.add("fa-sun");
         }
@@ -88,9 +88,9 @@ document.addEventListener('DOMContentLoaded', () => {
 function toggleTheme() {
     const htmlElement = document.documentElement;
     const themeIcon = document.getElementById("themeIcon");
-    
+
     htmlElement.classList.toggle("dark");
-    
+
     if (htmlElement.classList.contains("dark")) {
         themeIcon.classList.remove("fa-moon");
         themeIcon.classList.add("fa-sun");
@@ -107,7 +107,7 @@ function updateVarCount(count) {
     currentVarCount = parseInt(count);
     const totalRows = Math.pow(2, currentVarCount);
     currentOutputs = new Array(totalRows).fill(0);
-    
+
     const input = document.getElementById('expressionInput').value.trim();
     if (input) calculateFromExpression();
     else renderAll();
@@ -121,11 +121,11 @@ function translatePage() {
     document.getElementById("sectionInput").innerHTML = `<i class="fas fa-keyboard text-blue-500"></i> ${lang.sectionInput}`;
     document.getElementById("sectionVars").innerHTML = `<i class="fas fa-list-ol text-blue-500"></i> ${lang.sectionVars}`;
     document.getElementById("sectionExamples").innerHTML = `<i class="fas fa-lightbulb text-blue-500"></i> ${lang.sectionExamples}`;
-    
+
     document.getElementById("expressionInput").placeholder = lang.expressionPlaceholder;
-    if (document.getElementById("detectedText")) 
+    if (document.getElementById("detectedText"))
         document.getElementById("detectedText").textContent = lang.detectedVars;
-    
+
     document.getElementById("truthTableTitle").innerHTML = `<i class="fas fa-table text-blue-500"></i> ${lang.truthTableTitle}`;
     document.getElementById("kmapTitle").innerHTML = `<i class="fas fa-th text-blue-500"></i> ${lang.kmapTitle}`;
     document.getElementById("simplifiedTitle").textContent = lang.simplifiedTitle;
@@ -149,16 +149,16 @@ function changeLanguage() {
 function extractVariables(expr) {
     const varSet = new Set();
     const matches = expr.match(/[a-zA-Z]/g) || [];
-    
+
     matches.forEach(letter => {
         const upper = letter.toUpperCase();
-        const forbidden = ['AND', 'OR', 'NOT', 'XOR', 'V', 'E', 'OU']; 
-        
+        const forbidden = ['AND', 'OR', 'NOT', 'XOR', 'V', 'E', 'OU'];
+
         if (!forbidden.includes(upper)) {
             varSet.add(upper);
         }
     });
-    
+
     return Array.from(varSet).sort();
 }
 
@@ -207,8 +207,8 @@ function calculateFromExpression() {
 
     currentExpression = input;
     currentVariables = extractVariables(input);
-    
-    if (currentVariables.length === 0) currentVariables = ['A','B','C'];
+
+    if (currentVariables.length === 0) currentVariables = ['A', 'B', 'C'];
     currentVarCount = Math.min(currentVariables.length, 6);
 
     const totalRows = Math.pow(2, currentVarCount);
@@ -219,14 +219,14 @@ function calculateFromExpression() {
         const result = evaluateExpression(input, binary);
         if (result !== null) currentOutputs[i] = result;
     }
-    
+
     // Atualiza rádio buttons visuais de acordo com o detectado
     document.querySelectorAll('input[name="varCount"]').forEach(rb => {
         if (parseInt(rb.value) === currentVarCount) rb.checked = true;
     });
-    
+
     const varsListEl = document.getElementById('varsList');
-    if(varsListEl) varsListEl.textContent = currentVariables.join(', ');
+    if (varsListEl) varsListEl.textContent = currentVariables.join(', ');
 
     renderAll();
 }
@@ -240,8 +240,8 @@ function renderAll() {
 
 function renderTruthTable() {
     const table = document.getElementById('truthTable');
-    const varNames = currentVariables.length ? currentVariables : ['A','B','C','D'].slice(0, currentVarCount);
-    
+    const varNames = currentVariables.length ? currentVariables : ['A', 'B', 'C', 'D'].slice(0, currentVarCount);
+
     let html = `
         <thead>
             <tr class="bg-gray-100 border-b-2 border-gray-200 transition-colors duration-200">
@@ -274,10 +274,11 @@ function toggleOutput(index) {
 }
 
 // ==================== MAPA DE KARNAUGH ====================
+// ==================== MAPA DE KARNAUGH ====================
 function renderKMap() {
     const container = document.getElementById('kmapContainer');
     const varCount = currentVarCount;
-    
+
     if (varCount > 4) {
         container.innerHTML = `<p class="text-amber-600 font-medium">Mapa de Karnaugh disponível apenas para até 4 variáveis.</p>`;
         return;
@@ -291,41 +292,56 @@ function renderKMap() {
     let rowLabel = '', colLabel = '';
 
     if (varCount === 2) {
-        rowLabel = currentVariables[0] || 'A'; 
+        rowLabel = currentVariables[0] || 'A';
         colLabel = currentVariables[1] || 'B';
-        rows = grayCode2; 
+        rows = grayCode2;
         cols = grayCode2;
     } else if (varCount === 3) {
-        rowLabel = currentVariables[0] || 'A'; 
+        rowLabel = currentVariables[0] || 'A';
         colLabel = (currentVariables[1] || 'B') + (currentVariables[2] || 'C');
-        rows = grayCode2; 
+        rows = grayCode2;
         cols = grayCode4;
     } else if (varCount === 4) {
-        rowLabel = (currentVariables[0] || 'A') + (currentVariables[1] || 'B'); 
+        rowLabel = (currentVariables[0] || 'A') + (currentVariables[1] || 'B');
         colLabel = (currentVariables[2] || 'C') + (currentVariables[3] || 'D');
-        rows = grayCode4; 
+        rows = grayCode4;
         cols = grayCode4;
     }
 
-    html += `<div class="relative mx-auto mt-4">`;
-    html += `<div class="absolute -top-6 left-1/2 transform -translate-x-1/2 text-sm font-bold text-blue-600">${colLabel}</div>`;
-    html += `<div class="absolute top-1/2 -left-10 transform -translate-y-1/2 -rotate-90 text-sm font-bold text-blue-600">${rowLabel}</div>`;
-
+    html += `<div class="relative mx-auto mt-2">`;
     html += `<div class="grid" style="grid-template-columns: repeat(${cols.length + 1}, auto);">`;
-    html += `<div class="w-12 h-12"></div>`; 
 
+    // --- Célula do Canto: Com Linha Diagonal Perfeita em CSS ---
+    html += `
+        <div class="relative w-12 h-12 border-r border-b border-gray-300 dark:border-gray-600 overflow-hidden">
+            
+            <div class="absolute top-0 left-0 w-[142%] h-[1px] bg-gray-300 dark:bg-gray-600 origin-top-left rotate-45"></div>
+            
+            <div class="absolute top-0.5 right-1 text-[11px] font-bold text-blue-600 dark:text-blue-400">
+                ${colLabel}
+            </div>
+            
+            <div class="absolute bottom-0 left-1 text-[11px] font-bold text-blue-600 dark:text-blue-400">
+                ${rowLabel}
+            </div>
+            
+        </div>
+    `;
+
+    // Cabeçalho das colunas
     cols.forEach(c => {
         html += `<div class="w-14 h-12 flex items-center justify-center font-mono text-sm text-gray-500 dark:text-gray-400">${c}</div>`;
     });
 
+    // Linhas do mapa
     rows.forEach((r) => {
         html += `<div class="w-12 h-14 flex items-center justify-center font-mono text-sm text-gray-500 dark:text-gray-400">${r}</div>`;
-        
+
         cols.forEach((c) => {
             const binary = r + c;
             const index = parseInt(binary, 2);
             const isActive = currentOutputs[index] === 1;
-            
+
             html += `
                 <div class="kmap-cell w-14 h-14 ${isActive ? 'active' : ''}" 
                      onclick="toggleOutput(${index})">
@@ -343,7 +359,7 @@ function updateSimplifiedExpression() {
     const resultSection = document.getElementById('resultSection');
     const simplifiedDiv = document.getElementById('simplifiedExpression');
     const stepsUl = document.getElementById('calculationSteps');
-    
+
     const minterms = currentOutputs
         .map((val, i) => val === 1 ? i : null)
         .filter(v => v !== null);
@@ -368,9 +384,9 @@ function updateSimplifiedExpression() {
 }
 
 function simplifyWithSteps(minterms, varCount) {
-    const varNames = currentVariables.length ? currentVariables : ['A','B','C','D'].slice(0, varCount);
+    const varNames = currentVariables.length ? currentVariables : ['A', 'B', 'C', 'D'].slice(0, varCount);
     let steps = [];
-    
+
     steps.push(`${t('mintermsIdentified')}: ${minterms.join(', ')}`);
 
     let groups = {};
@@ -416,7 +432,7 @@ function simplifyWithSteps(minterms, varCount) {
                             nextGroups[ones].push({
                                 bin: newBin,
                                 combined: false,
-                                source: [...new Set([...m1.source, ...m2.source])].sort((a,b)=>a-b)
+                                source: [...new Set([...m1.source, ...m2.source])].sort((a, b) => a - b)
                             });
                             matchesInThisStage++;
                         }
@@ -490,7 +506,7 @@ function initExamples() {
 function loadExample(idx) {
     const ex = window.allExamples[idx];
     updateVarCount(ex.vars);
-    
+
     document.querySelectorAll('input[name="varCount"]').forEach(rb => {
         if (parseInt(rb.value) === ex.vars) rb.checked = true;
     });
@@ -502,5 +518,97 @@ function loadExample(idx) {
         document.getElementById('expressionInput').value = "";
         currentOutputs = [...ex.data];
         renderAll();
+    }
+}
+
+// ==================== EXPORTAÇÃO PARA PDF (DOWNLOAD DIRETO CORRIGIDO) ====================
+function downloadPDF() {
+    const element = document.getElementById('kmapCard');
+    const btn = element.querySelector('button[onclick="downloadPDF()"]');
+    const watermark = document.getElementById('watermark');
+
+    // 1. Esconde o botão para não sair no PDF
+    if (btn) btn.style.display = 'none';
+
+    // 2. Revela a marca de água removendo o hidden e forçando a exibição
+    if (watermark) {
+        watermark.classList.remove('hidden');
+        watermark.style.setProperty('display', 'block', 'important');
+    }
+
+    const opt = {
+        margin: 10,
+        filename: 'Mapa_Karnaugh.pdf',
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
+    // 3. O SEGREDO: Aguarda 100ms para o navegador processar o HTML antes de gerar o PDF
+    setTimeout(() => {
+        html2pdf().set(opt).from(element).save().then(() => {
+            // Torna a colocar o botão no ecrã
+            if (btn) btn.style.display = 'flex';
+
+            // Oculta a marca de água novamente
+            if (watermark) {
+                watermark.classList.add('hidden');
+                watermark.style.removeProperty('display');
+            }
+        });
+    }, 100); // 100 milissegundos são suficientes para o motor gráfico atualizar
+}
+
+// ==================== EXPORTAÇÃO PARA PDF (TABELA VERDADE) ====================
+function downloadTruthTablePDF() {
+    const element = document.getElementById('truthTableCard');
+    const btn = element.querySelector('button[onclick="downloadTruthTablePDF()"]');
+    const watermark = document.getElementById('watermarkTT');
+
+    // 1. Esconde o botão para não sair no PDF
+    if (btn) btn.style.display = 'none';
+
+    // 2. Revela a marca de água 
+    if (watermark) {
+        watermark.classList.remove('hidden');
+        watermark.style.setProperty('display', 'block', 'important');
+    }
+
+    const opt = {
+        margin: 10,
+        filename: 'Tabela_Verdade.pdf',
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
+    // 3. Aguarda 100ms para o navegador renderizar a marca-d'água e tira a "foto"
+    setTimeout(() => {
+        html2pdf().set(opt).from(element).save().then(() => {
+            // Devolve o botão à tela
+            if (btn) btn.style.display = 'flex';
+
+            // Oculta a marca de água novamente
+            if (watermark) {
+                watermark.classList.add('hidden');
+                watermark.style.removeProperty('display');
+            }
+        });
+    }, 100);
+}
+
+// ==================== MENU EXPANSÍVEL (EXEMPLOS RÁPIDOS) ====================
+function toggleExamples() {
+    const content = document.getElementById('examplesContent');
+    const chevron = document.getElementById('examplesChevron');
+    
+    // Mostra/esconde o seu conteúdo original
+    content.classList.toggle('hidden');
+    
+    // Gira a setinha
+    if (content.classList.contains('hidden')) {
+        chevron.classList.remove('rotate-180');
+    } else {
+        chevron.classList.add('rotate-180');
     }
 }

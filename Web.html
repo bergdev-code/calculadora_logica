@@ -1,10 +1,21 @@
 <!DOCTYPE html>
 <html lang="pt-br">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Simplificador Lógico - Ânima Study</title>
+
     <script src="https://cdn.tailwindcss.com"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+        }
+    </script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         .kmap-cell {
@@ -17,13 +28,16 @@
             cursor: pointer;
             transition: all 0.2s;
         }
+
         .kmap-cell:hover {
             background-color: #f0f0f0;
         }
+
         .kmap-cell.active {
             background-color: #3b82f6;
             color: white;
         }
+
         .truth-table-row:nth-child(even) {
             background-color: #f9fafb;
         }
@@ -33,69 +47,129 @@
             background-color: #1e1e1e;
             color: #d4d4d4;
         }
+
         html.dark header {
             background-color: #061642;
         }
-        html.dark section, 
+
+        html.dark section,
         html.dark .bg-white {
             background-color: #252526;
             border-color: #3c3c3c;
         }
-        html.dark input, html.dark select {
+
+        html.dark input,
+        html.dark select {
             background-color: #3c3c3c;
             color: #d4d4d4;
             border-color: #555555;
         }
-        html.dark input:focus, html.dark select:focus {
+
+        html.dark input:focus,
+        html.dark select:focus {
             border-color: #007acc;
             outline: none;
         }
-        html.dark .text-gray-700, html.dark .text-gray-800, html.dark .text-gray-600 {
+
+        html.dark .text-gray-700,
+        html.dark .text-gray-800,
+        html.dark .text-gray-600 {
             color: #cccccc;
         }
-        html.dark .text-blue-800, html.dark .text-blue-900, html.dark .text-blue-700 {
+
+        html.dark .text-blue-800,
+        html.dark .text-blue-900,
+        html.dark .text-blue-700 {
             color: #9cdcfe;
         }
-        html.dark .bg-blue-50, html.dark .bg-gray-50, html.dark .bg-gray-100 {
+
+        html.dark .bg-blue-50,
+        html.dark .bg-gray-50,
+        html.dark .bg-gray-100 {
             background-color: #1e1e1e;
             border-color: #3c3c3c;
         }
+
         html.dark .truth-table-row:nth-child(even) {
             background-color: #2a2d2e;
         }
+
         html.dark .truth-table-row {
             border-color: #3c3c3c;
         }
+
         html.dark th {
             background-color: #252526;
             border-bottom: 2px solid #3c3c3c;
             color: #d4d4d4;
         }
+
         html.dark .kmap-cell {
             border-color: #555555;
             background-color: #252526;
             color: #d4d4d4;
         }
+
         html.dark .kmap-cell:hover {
             background-color: #333333;
         }
+
         html.dark .kmap-cell.active {
             background-color: #007acc;
             color: #ffffff;
             border-color: #007acc;
         }
+
         html.dark footer {
             background-color: #1e1e1e;
             border-top-color: #3c3c3c;
             color: #858585;
         }
+
         html.dark .hover\:bg-blue-50:hover {
             background-color: #333333;
         }
+
+        /* Configurações para o PDF */
+        @media print {
+
+            /* Esconde tudo que não é o resultado principal */
+            header,
+            footer,
+            .lg\:col-span-1,
+            button,
+            .flex.justify-between.items-start button {
+                display: none !important;
+            }
+
+            /* Expande a área de resultados para a página toda */
+            .lg\:col-span-2 {
+                width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+
+            body {
+                background: white !important;
+            }
+
+            section {
+                border: 1px solid #eee !important;
+                box-shadow: none !important;
+                break-inside: avoid;
+            }
+
+            /* Garante que o navegador imprima as cores de fundo (importante para as células ativas) */
+            * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+        }
     </style>
 </head>
+
 <body class="bg-gray-50 min-h-screen text-gray-800 transition-colors duration-200">
-    
+
     <header class="bg-blue-600 text-white p-6 shadow-md transition-colors duration-200">
         <div class="container mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
             <div>
@@ -105,41 +179,48 @@
                 </h1>
                 <p id="appSubtitle" class="mt-2 text-blue-100">Tabela Verdade, Mapa de Karnaugh e Simplificação</p>
             </div>
-            
+
             <div class="flex items-center gap-3">
                 <label class="text-sm font-medium">Idioma:</label>
-                <select id="languageSelect" onchange="changeLanguage()" 
-                        class="bg-white text-gray-800 px-4 py-2 rounded-lg border border-blue-300 focus:outline-none focus:ring-2">
+                <select id="languageSelect" onchange="changeLanguage()"
+                    class="bg-white text-gray-800 px-4 py-2 rounded-lg border border-blue-300 focus:outline-none focus:ring-2">
                     <option value="pt">🇧🇷 Português</option>
                     <option value="en">🇺🇸 English</option>
                 </select>
 
-                <button onclick="toggleTheme()" class="bg-black bg-opacity-20 hover:bg-opacity-40 text-white w-10 h-10 rounded-lg flex items-center justify-center transition shadow-sm border border-transparent dark:border-gray-600" aria-label="Alternar Tema">
+                <button onclick="toggleTheme()"
+                    class="bg-black bg-opacity-20 hover:bg-opacity-40 text-white w-10 h-10 rounded-lg flex items-center justify-center transition shadow-sm border border-transparent dark:border-gray-600"
+                    aria-label="Alternar Tema">
                     <i class="fas fa-moon text-lg" id="themeIcon"></i>
                 </button>
             </div>
         </div>
+
     </header>
 
     <main class="container mx-auto p-4 lg:p-8">
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            
+
             <div class="lg:col-span-1 space-y-6">
-                
-                <section class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 transition-colors duration-200">
+
+                <section
+                    class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 transition-colors duration-200">
                     <h2 id="sectionInput" class="text-xl font-semibold mb-4 flex items-center gap-2">
                         <i class="fas fa-keyboard text-blue-500"></i> Entrada de Função
                     </h2>
                     <div class="space-y-4">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1" id="labelExpression">Expressão Booleana</label>
-                            <input type="text" id="expressionInput" placeholder="Ex: X.Y + ~Z + A.B" 
+                            <label class="block text-sm font-medium text-gray-700 mb-1" id="labelExpression">Expressão
+                                Booleana</label>
+                            <input type="text" id="expressionInput" placeholder="Ex: X.Y + ~Z + A.B"
                                 onkeydown="if(event.key==='Enter') calculateFromExpression()"
                                 class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors duration-200">
-                            <div id="expressionError" class="hidden mt-2 p-2 bg-red-50 border border-red-200 text-red-600 text-xs rounded-lg">
+                            <div id="expressionError"
+                                class="hidden mt-2 p-2 bg-red-50 border border-red-200 text-red-600 text-xs rounded-lg">
                                 Expressão inválida. Verifique os operadores e variáveis.
                             </div>
-                            <div class="mt-2 p-3 bg-gray-50 rounded-lg border border-gray-100 transition-colors duration-200">
+                            <div
+                                class="mt-2 p-3 bg-gray-50 rounded-lg border border-gray-100 transition-colors duration-200">
                                 <p class="text-xs font-bold text-gray-400 uppercase mb-1">Operadores:</p>
                                 <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-gray-600">
                                     <span><b>.</b> ou <b>&</b> : AND</span>
@@ -150,17 +231,22 @@
                             </div>
                         </div>
                         <div class="flex gap-2">
-                            <button onclick="calculateFromExpression()" class="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition" id="btnCalculate">
+                            <button onclick="calculateFromExpression()"
+                                class="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition"
+                                id="btnCalculate">
                                 Calcular
                             </button>
-                            <button onclick="clearAll()" class="bg-gray-200 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-300 transition dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600" id="btnClear">
+                            <button onclick="clearAll()"
+                                class="bg-gray-200 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-300 transition dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+                                id="btnClear">
                                 Limpar
                             </button>
                         </div>
                     </div>
                 </section>
 
-                <section class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 transition-colors duration-200">
+                <section
+                    class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 transition-colors duration-200">
                     <h2 id="sectionVars" class="text-xl font-semibold mb-4 flex items-center gap-2">
                         <i class="fas fa-list-ol text-blue-500"></i> Variáveis
                     </h2>
@@ -175,61 +261,159 @@
                             <input type="radio" name="varCount" value="4" onchange="updateVarCount(4)"> 4 vars
                         </label>
                     </div>
-                    
+
                     <div id="detectedVars" class="mt-4 p-3 bg-blue-50 rounded-lg transition-colors duration-200">
                         <p id="detectedText" class="text-blue-700 font-medium">Variáveis detectadas:</p>
                         <p id="varsList" class="font-mono text-blue-800 mt-1"></p>
                     </div>
                 </section>
 
-                <section class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 transition-colors duration-200">
-                    <h2 id="sectionExamples" class="text-xl font-semibold mb-4 flex items-center gap-2">
-                        <i class="fas fa-lightbulb text-blue-500"></i> Exemplos Rápidos
-                    </h2>
-                    <div class="grid grid-cols-1 gap-2" id="examplesContainer"></div>
+                <section
+                    class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 transition-colors duration-200 dark:bg-[#252526] dark:border-[#3c3c3c]">
+
+                    <div onclick="toggleExamples()"
+                        class="flex justify-between items-center cursor-pointer select-none">
+                        <h2 class="text-xl font-semibold flex items-center gap-2">
+                            <i class="fas fa-layer-group text-blue-500"></i> Identidades Visuais
+                        </h2>
+                        <i id="examplesChevron"
+                            class="fas fa-chevron-down text-gray-500 dark:text-gray-400 transition-transform duration-300"></i>
+                    </div>
+
+                    <div id="examplesContent" class="hidden mt-4">
+
+                        <div
+                            class="bg-gray-100 dark:bg-[#1e1e1e] p-4 rounded-lg font-mono text-sm text-gray-800 dark:text-[#d4d4d4] space-y-3">
+
+                            <div class="border-b border-gray-200 dark:border-[#3c3c3c] pb-2">
+                                <span class="text-xs text-gray-400 dark:text-gray-500 block font-sans mb-0.5">Lei da
+                                    Absorção (Preenche meia tabela)</span>
+                                <p class="font-bold text-blue-600 dark:text-[#9cdcfe]">A + A.B.C</p>
+                            </div>
+
+                            <div class="border-b border-gray-200 dark:border-[#3c3c3c] pb-2">
+                                <span class="text-xs text-gray-400 dark:text-gray-500 block font-sans mb-0.5">Teorema de
+                                    De Morgan (Malha Inversa)</span>
+                                <p class="font-bold text-blue-600 dark:text-[#9cdcfe]">~A + ~B</p>
+                            </div>
+
+                            <div class="border-b border-gray-200 dark:border-[#3c3c3c] pb-2">
+                                <span class="text-xs text-gray-400 dark:text-gray-500 block font-sans mb-0.5">Adjacência
+                                    Lógica (Formação de Par/Quadra)</span>
+                                <p class="font-bold text-blue-600 dark:text-[#9cdcfe]">A.B + A.~B</p>
+                            </div>
+
+                            <div class="border-b border-gray-200 dark:border-[#3c3c3c] pb-2">
+                                <span class="text-xs text-gray-400 dark:text-gray-500 block font-sans mb-0.5">Teorema do
+                                    Consenso (Eliminação de Redundância)</span>
+                                <p class="font-bold text-blue-600 dark:text-[#9cdcfe]">A.B + ~A.C + B.C</p>
+                            </div>
+
+                            <div>
+                                <span class="text-xs text-gray-400 dark:text-gray-500 block font-sans mb-0.5">Padrão de
+                                    Paridade (XOR / Efeito Xadrez)</span>
+                                <p class="font-bold text-blue-600 dark:text-[#9cdcfe]">A ^ B ^ C</p>
+                            </div>
+
+                        </div>
+
+                    </div>
                 </section>
             </div>
 
             <div class="lg:col-span-2 space-y-8">
-                
-                <section id="resultSection" class="hidden bg-blue-50 border border-blue-200 p-6 rounded-xl transition-colors duration-200">
-                    <h2 id="simplifiedTitle" class="text-lg font-bold text-blue-800 mb-2">Expressão Simplificada:</h2>
-                    <div id="simplifiedExpression" class="text-2xl font-mono text-blue-900 break-all mb-4"></div>
-                    
-                    <div class="mt-4 pt-4 border-t border-blue-200 dark:border-gray-600">
-                        <h3 id="stepsTitle" class="text-sm font-semibold text-blue-700 uppercase tracking-wider mb-2">Passos do Cálculo:</h3>
-                        <ul id="calculationSteps" class="text-sm text-blue-800 space-y-1 list-disc list-inside"></ul>
-                    </div>
-                </section>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <section class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 overflow-hidden transition-colors duration-200">
-                        <h2 id="truthTableTitle" class="text-xl font-semibold mb-4 flex items-center gap-2">
-                            <i class="fas fa-table text-blue-500"></i> Tabela Verdade
-                        </h2>
-                        <div class="overflow-x-auto">
+
+                    <section id="truthTableCard"
+                        class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 overflow-hidden transition-colors duration-200 flex flex-col h-full relative">
+
+                        <div class="flex justify-between items-start mb-4">
+                            <h2 id="truthTableTitle" class="text-xl font-semibold flex items-center gap-2">
+                                <i class="fas fa-table text-blue-500"></i> Tabela Verdade
+                            </h2>
+
+                            <button onclick="downloadTruthTablePDF()"
+                                class="w-10 h-10 rounded-lg border border-gray-300 dark:border-gray-500 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 transition-all shadow-sm"
+                                title="Baixar Tabela em PDF">
+                                <i class="fas fa-arrow-down"></i>
+                            </button>
+                        </div>
+
+                        <div class="overflow-x-auto mb-auto">
                             <table class="w-full text-center border-collapse" id="truthTable"></table>
                         </div>
+
+                        <div id="watermarkTT"
+                            class="hidden mt-6 text-[10px] text-right text-gray-500 dark:text-gray-400 opacity-70">
+                            Gerado por Calculadora Online.com</div>
                     </section>
 
-                    <section class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 transition-colors duration-200">
-                        <h2 id="kmapTitle" class="text-xl font-semibold mb-4 flex items-center gap-2">
-                            <i class="fas fa-th text-blue-500"></i> Mapa de Karnaugh
-                        </h2>
+                    <section id="kmapCard"
+                        class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 transition-colors duration-200 flex flex-col h-full relative">
+
+                        <div class="flex justify-between items-start mb-4">
+                            <h2 id="kmapTitle" class="text-xl font-semibold flex items-center gap-2">
+                                <i class="fas fa-th text-blue-500"></i> Mapa de Karnaugh
+                            </h2>
+
+                            <button onclick="downloadPDF()"
+                                class="w-10 h-10 rounded-lg border border-gray-300 dark:border-gray-500 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-gray-700 transition-all shadow-sm"
+                                title="Baixar Mapa em PDF">
+                                <i class="fas fa-arrow-down"></i>
+                            </button>
+                        </div>
+
                         <div id="kmapContainer" class="flex flex-col items-center"></div>
                         <div id="kmapGroups" class="mt-4 text-sm text-gray-600"></div>
+
+                        <div class="mt-auto pt-6 border-t border-gray-200 dark:border-gray-600 text-center">
+                            <h2 id="simplifiedTitle"
+                                class="text-sm font-bold text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wider">
+                                Expressão Simplificada:</h2>
+                            <div id="simplifiedExpression"
+                                class="text-2xl font-mono text-blue-600 dark:text-[#9cdcfe] font-bold break-all"></div>
+                        </div>
+                        <div id="watermark"
+                            class="hidden mt-6 text-[10px] text-right text-gray-500 dark:text-gray-400 opacity-70">
+                            Gerado por Calculadora Online.com</div>
                     </section>
+
                 </div>
+                <section id="resultSection"
+                    class="hidden bg-blue-50 border border-blue-200 p-6 rounded-xl transition-colors duration-200 dark:bg-[#252526] dark:border-[#3c3c3c]">
+                    <h3 id="stepsTitle"
+                        class="text-sm font-semibold text-blue-700 dark:text-blue-400 uppercase tracking-wider mb-2">
+                        Passos do Cálculo:</h3>
+                    <ul id="calculationSteps"
+                        class="text-sm text-blue-800 dark:text-[#d4d4d4] space-y-1 list-disc list-inside"></ul>
+                </section>
+
             </div>
+
+            <section id="resultSection"
+                class="hidden bg-blue-50 border border-blue-200 p-6 rounded-xl transition-colors duration-200 dark:bg-[#252526] dark:border-[#3c3c3c]">
+                <h3 id="stepsTitle"
+                    class="text-sm font-semibold text-blue-700 dark:text-blue-400 uppercase tracking-wider mb-2">
+                    Passos do Cálculo:</h3>
+                <ul id="calculationSteps"
+                    class="text-sm text-blue-800 dark:text-[#d4d4d4] space-y-1 list-disc list-inside"></ul>
+            </section>
+
+            <div class="lg:col-span-2 space-y-8"></div>
+
+        </div>
         </div>
     </main>
 
     <footer class="bg-gray-100 border-t border-gray-200 py-8 mt-12 transition-colors duration-200">
         <div class="container mx-auto text-center text-gray-500 text-sm">
-            <p id="footerText">Desenvolvido para auxílio nos estudos da UC: Matemática Computacional Aplicada - Ânima</p>
+            <p id="footerText">Desenvolvido para auxílio nos estudos da UC: Matemática Computacional Aplicada - Ânima
+            </p>
         </div>
     </footer>
 
     <script src="script.js"></script>
 </body>
+
 </html>
