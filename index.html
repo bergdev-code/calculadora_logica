@@ -59,13 +59,40 @@
         html.dark .kmap-cell.active { background-color: #007acc; color: #ffffff; border-color: #007acc; }
         html.dark footer { background-color: #1e1e1e; border-top-color: #3c3c3c; color: #858585; }
 
-        @media print {
-            header, footer, .lg\:col-span-1, button, .flex.justify-between.items-start button { display: none !important; }
-            .lg\:col-span-2 { width: 100% !important; margin: 0 !important; padding: 0 !important; }
-            body { background: white !important; }
-            section { border: 1px solid #eee !important; box-shadow: none !important; break-inside: avoid; }
-            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-        }
+    @media print {
+
+    header,
+    footer,
+    .lg\:col-span-1,
+    .pdf-download-area,
+    button,
+    .flex.justify-between.items-start button {
+        display: none !important;
+    }
+
+    .lg\:col-span-2 {
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    body {
+        background: white !important;
+    }
+
+    section {
+        border: 1px solid #eee !important;
+        box-shadow: none !important;
+        break-inside: avoid;
+    }
+
+    * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+}
+
+
     </style>
 </head>
 
@@ -123,9 +150,13 @@
                                     <button onclick="insertSymbol(')')" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 font-bold py-2 rounded-lg shadow-sm border border-gray-300 dark:border-gray-500 transition-transform active:scale-95 text-lg">)</button>
                                 </div>
                                 <div class="flex gap-2">
+                                    <button onclick="insertSymbol('{')" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 font-bold py-2 rounded-lg shadow-sm border border-gray-300 dark:border-gray-500 transition-transform active:scale-95 text-lg">{</button>
+                                    <button onclick="insertSymbol('}')" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 font-bold py-2 rounded-lg shadow-sm border border-gray-300 dark:border-gray-500 transition-transform active:scale-95 text-lg">}</button>
                                     <button onclick="insertSymbol('A')" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-800 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 font-bold py-2 rounded-lg shadow-sm border border-gray-200 dark:border-gray-600 transition-transform active:scale-95 text-lg">A</button>
                                     <button onclick="insertSymbol('B')" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-800 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 font-bold py-2 rounded-lg shadow-sm border border-gray-200 dark:border-gray-600 transition-transform active:scale-95 text-lg">B</button>
                                     <button onclick="insertSymbol('C')" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-800 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 font-bold py-2 rounded-lg shadow-sm border border-gray-200 dark:border-gray-600 transition-transform active:scale-95 text-lg">C</button>
+                                </div>
+                                <div class="flex gap-2">
                                     <button onclick="insertSymbol('D')" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-800 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 font-bold py-2 rounded-lg shadow-sm border border-gray-200 dark:border-gray-600 transition-transform active:scale-95 text-lg">D</button>
                                     <button onclick="insertSymbol('E')" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-800 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 font-bold py-2 rounded-lg shadow-sm border border-gray-200 dark:border-gray-600 transition-transform active:scale-95 text-lg">E</button>
                                     <button onclick="backspaceSymbol()" class="flex-1 bg-red-100 hover:bg-red-200 text-red-600 dark:bg-red-900/40 dark:text-red-400 dark:hover:bg-red-800/50 font-bold py-2 rounded-lg shadow-sm border border-red-200 dark:border-red-800/50 transition-transform active:scale-95 text-lg" title="Apagar">
@@ -160,6 +191,7 @@
                         <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="varCount" value="2" onchange="updateVarCount(2)"> 2 vars</label>
                         <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="varCount" value="3" onchange="updateVarCount(3)" checked> 3 vars</label>
                         <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="varCount" value="4" onchange="updateVarCount(4)"> 4 vars</label>
+                        <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="varCount" value="5" onchange="updateVarCount(5)"> 5 vars</label>
                     </div>
                     <div id="detectedVars" class="mt-4 p-3 bg-blue-50 rounded-lg transition-colors duration-200">
                         <p id="detectedText" class="text-blue-700 font-medium">Variáveis detectadas:</p>
@@ -169,18 +201,18 @@
 
                 <section class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 transition-colors duration-200 dark:bg-[#252526] dark:border-[#3c3c3c]">
                     <div onclick="toggleExamples()" class="flex justify-between items-center cursor-pointer select-none">
-                        <h2 class="text-xl font-semibold flex items-center gap-2">
+                        <h2 id="sectionExamples" class="text-xl font-semibold flex items-center gap-2">
                             <i class="fas fa-layer-group text-blue-500"></i> Identidades Visuais
                         </h2>
                         <i id="examplesChevron" class="fas fa-chevron-down text-gray-500 dark:text-gray-400 transition-transform duration-300"></i>
                     </div>
                     <div id="examplesContent" class="hidden mt-4">
                         <div class="bg-gray-100 dark:bg-[#1e1e1e] p-4 rounded-lg font-mono text-sm text-gray-800 dark:text-[#d4d4d4] space-y-3">
-                            <div class="border-b border-gray-200 dark:border-[#3c3c3c] pb-2 cursor-pointer hover:opacity-70" onclick="document.getElementById('expressionInput').value='A + A.B.C';"><span class="text-xs text-gray-400 block font-sans">Lei da Absorção</span><p class="font-bold text-blue-600">A + A.B.C</p></div>
-                            <div class="border-b border-gray-200 dark:border-[#3c3c3c] pb-2 cursor-pointer hover:opacity-70" onclick="document.getElementById('expressionInput').value='~A + ~B';"><span class="text-xs text-gray-400 block font-sans">Teorema de De Morgan</span><p class="font-bold text-blue-600">~A + ~B</p></div>
-                            <div class="border-b border-gray-200 dark:border-[#3c3c3c] pb-2 cursor-pointer hover:opacity-70" onclick="document.getElementById('expressionInput').value='A.B + A.~B';"><span class="text-xs text-gray-400 block font-sans">Adjacência Lógica</span><p class="font-bold text-blue-600">A.B + A.~B</p></div>
-                            <div class="border-b border-gray-200 dark:border-[#3c3c3c] pb-2 cursor-pointer hover:opacity-70" onclick="document.getElementById('expressionInput').value='A.B + ~A.C + B.C';"><span class="text-xs text-gray-400 block font-sans">Teorema do Consenso</span><p class="font-bold text-blue-600">A.B + ~A.C + B.C</p></div>
-                            <div class="cursor-pointer hover:opacity-70" onclick="document.getElementById('expressionInput').value='A ^ B ^ C';"><span class="text-xs text-gray-400 block font-sans">Padrão de Paridade</span><p class="font-bold text-blue-600">A ^ B ^ C</p></div>
+                            <div class="border-b border-gray-200 dark:border-[#3c3c3c] pb-2 cursor-pointer hover:opacity-70" onclick="document.getElementById('expressionInput').value='A + A.B.C';"><span class="text-xs text-gray-400 block font-sans" id="example1Label">Lei da Absorção</span><p class="font-bold text-blue-600">A + A.B.C</p></div>
+                            <div class="border-b border-gray-200 dark:border-[#3c3c3c] pb-2 cursor-pointer hover:opacity-70" onclick="document.getElementById('expressionInput').value='~A + ~B';"><span class="text-xs text-gray-400 block font-sans" id="example2Label">Teorema de De Morgan</span><p class="font-bold text-blue-600">~A + ~B</p></div>
+                            <div class="border-b border-gray-200 dark:border-[#3c3c3c] pb-2 cursor-pointer hover:opacity-70" onclick="document.getElementById('expressionInput').value='A.B + A.~B';"><span class="text-xs text-gray-400 block font-sans" id="example3Label">Adjacência Lógica</span><p class="font-bold text-blue-600">A.B + A.~B</p></div>
+                            <div class="border-b border-gray-200 dark:border-[#3c3c3c] pb-2 cursor-pointer hover:opacity-70" onclick="document.getElementById('expressionInput').value='A.B + ~A.C + B.C';"><span class="text-xs text-gray-400 block font-sans" id="example4Label">Teorema do Consenso</span><p class="font-bold text-blue-600">A.B + ~A.C + B.C</p></div>
+                            <div class="cursor-pointer hover:opacity-70" onclick="document.getElementById('expressionInput').value='A ^ B ^ C';"><span class="text-xs text-gray-400 block font-sans" id="example5Label">Padrão de Paridade</span><p class="font-bold text-blue-600">A ^ B ^ C</p></div>
                         </div>
                     </div>
                 </section>
@@ -188,7 +220,7 @@
                 <section class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 transition-colors duration-200 dark:bg-[#252526] dark:border-[#3c3c3c]">
                     <div onclick="toggleHistory()" class="flex justify-between items-center cursor-pointer select-none">
                         <div class="flex items-center gap-2">
-                            <h2 class="text-xl font-semibold flex items-center gap-2">
+                            <h2 id="historyTitle" class="text-xl font-semibold flex items-center gap-2">
                                 <i class="fas fa-history text-blue-500"></i> Histórico
                             </h2>
                             <span id="historyCount" class="text-xs font-bold bg-blue-100 text-blue-600 dark:bg-blue-900 px-2 py-0.5 rounded-full">0</span>
@@ -203,7 +235,7 @@
 
             </div> <div id="fullReportArea" class="lg:col-span-2 space-y-6 relative w-full min-w-0">
                 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
                     
                     <section id="truthTableCard" class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 overflow-hidden transition-colors duration-200 flex flex-col h-full relative dark:bg-[#252526] dark:border-[#3c3c3c]">
                         <div class="flex justify-between items-start mb-4">
@@ -240,7 +272,7 @@
                         <ul id="calculationSteps" class="text-sm text-blue-800 dark:text-[#d4d4d4] space-y-1 list-disc list-inside"></ul>
                     </section>
 
-                    <section class="flex-none md:w-64 bg-white p-4 rounded-xl shadow-sm border border-gray-200 transition-colors duration-200 dark:bg-[#252526] dark:border-[#3c3c3c] flex flex-col justify-center text-center ml-auto">
+                    <section id="pdfCard" class="flex-none md:w-64 bg-white p-4 rounded-xl shadow-sm border border-gray-200 transition-colors duration-200 dark:bg-[#252526] dark:border-[#3c3c3c] flex flex-col justify-center text-center ml-auto">
                         
                         <p class="text-xs text-gray-500 dark:text-gray-400 mb-4 leading-snug">
                             Salve um documento PDF com todas as tabelas, mapas e expressões simplificadas.
@@ -253,11 +285,11 @@
 
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
                     
                     <section id="sopCard" class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 transition-colors duration-200 flex flex-col h-full relative dark:bg-[#252526] dark:border-[#3c3c3c]">
                         <div class="flex justify-between items-start mb-4">
-                            <h2 class="text-xl font-semibold flex items-center gap-2">
+                            <h2 id="sopTitle" class="text-xl font-semibold flex items-center gap-2">
                                 <i class="fas fa-plus text-green-500"></i> Soma de Produtos (SOP)
                             </h2>
                         </div>
@@ -265,14 +297,14 @@
                             <table class="w-full text-center border-collapse" id="sopTable"></table>
                         </div>
                         <div class="mt-auto pt-6 border-t border-gray-200 dark:border-gray-600 text-center">
-                            <h2 class="text-sm font-bold text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wider">Expressão Padrão:</h2>
+                            <h2 id="sopStandardExprTitle" class="text-sm font-bold text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wider">Expressão Padrão:</h2>
                             <div id="sopExpression" class="text-xl font-mono text-green-600 dark:text-green-400 font-bold break-all"></div>
                         </div>
                     </section>
 
                     <section id="posCard" class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 transition-colors duration-200 flex flex-col h-full relative dark:bg-[#252526] dark:border-[#3c3c3c]">
                         <div class="flex justify-between items-start mb-4">
-                            <h2 class="text-xl font-semibold flex items-center gap-2">
+                            <h2 id="posTitle" class="text-xl font-semibold flex items-center gap-2">
                                 <i class="fas fa-times text-red-500"></i> Produto de Somas (POS)
                             </h2>
                         </div>
@@ -280,7 +312,7 @@
                             <table class="w-full text-center border-collapse" id="posTable"></table>
                         </div>
                         <div class="mt-auto pt-6 border-t border-gray-200 dark:border-gray-600 text-center">
-                            <h2 class="text-sm font-bold text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wider">Expressão Padrão:</h2>
+                            <h2 id="posStandardExprTitle" class="text-sm font-bold text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wider">Expressão Padrão:</h2>
                             <div id="posExpression" class="text-xl font-mono text-red-600 dark:text-red-400 font-bold break-all"></div>
                         </div>
                     </section>

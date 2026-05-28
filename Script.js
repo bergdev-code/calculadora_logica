@@ -11,7 +11,8 @@ const translations = {
         appSubtitle: "Tabela Verdade, Mapa de Karnaugh e Simplificação",
         sectionInput: "Entrada de Função",
         sectionVars: "Variáveis",
-        sectionExamples: "Exemplos Rápidos",
+        sectionExamples: "Identidades Visuais",
+        sectionHistory: "Histórico",
         expressionPlaceholder: "Ex: X.Y + ~Z + A.B",
         calculate: "Calcular",
         clear: "Limpar",
@@ -29,14 +30,26 @@ const translations = {
         combinedDoubles: "Combinadas",
         doubles: "duplas",
         primeImplicantsFound: "Implicantes Primos encontrados",
-        expressionError: "Expressão inválida. Verifique os operadores e variáveis."
+        expressionError: "Expressão inválida. Verifique os operadores e variáveis.",
+        kmapLimit: "Mapa de Karnaugh disponível apenas para até 4 variáveis.",
+        noMintermsFound: "Nenhum mintermo (S=1) encontrado.",
+        noMaxtermsFound: "Nenhum maxtermo (S=0) encontrado.",
+        historyEmpty: "Nenhuma expressão calculada ainda.",
+        clearHistory: "Limpar Histórico",
+        processing: "Processando...",
+        savePDF: "Baixar PDF",
+        pdfDescription: "Salve um documento PDF com todas as tabelas, mapas e expressões simplificadas.",
+        sopTitle: "Soma de Produtos (SOP)",
+        posTitle: "Produto de Somas (POS)",
+        standardExpression: "Expressão Padrão:"
     },
     en: {
         appTitle: "Digital Logic Calculator",
         appSubtitle: "Truth Table, Karnaugh Map and Simplification",
         sectionInput: "Function Input",
         sectionVars: "Variables",
-        sectionExamples: "Quick Examples",
+        sectionExamples: "Visual Identities",
+        sectionHistory: "History",
         expressionPlaceholder: "Ex: X.Y + ~Z + A.B",
         calculate: "Calculate",
         clear: "Clear",
@@ -54,7 +67,18 @@ const translations = {
         combinedDoubles: "Combined",
         doubles: "pairs",
         primeImplicantsFound: "Prime implicants found",
-        expressionError: "Invalid expression. Check operators and variables."
+        expressionError: "Invalid expression. Check operators and variables.",
+        kmapLimit: "Karnaugh Map is only available for up to 4 variables.",
+        noMintermsFound: "No minterms (S=1) found.",
+        noMaxtermsFound: "No maxterms (S=0) found.",
+        historyEmpty: "No expression calculated yet.",
+        clearHistory: "Clear History",
+        processing: "Processing...",
+        savePDF: "Download PDF",
+        pdfDescription: "Save a PDF document with all tables, maps, and simplified expressions.",
+        sopTitle: "Sum of Products (SOP)",
+        posTitle: "Product of Sums (POS)",
+        standardExpression: "Standard Expression:"
     }
 };
 
@@ -103,6 +127,15 @@ function toggleTheme() {
 }
 
 // ==================== VARIÁVEIS E TRADUÇÃO ====================
+function ensureVariables() {
+    const defaultVars = ['A', 'B', 'C', 'D', 'E'];
+    if (currentVariables.length < currentVarCount) {
+        for (let i = currentVariables.length; i < currentVarCount; i++) {
+            currentVariables.push(defaultVars[i]);
+        }
+    }
+}
+
 function updateVarCount(count) {
     currentVarCount = parseInt(count);
     const totalRows = Math.pow(2, currentVarCount);
@@ -120,7 +153,66 @@ function translatePage() {
     document.getElementById("appSubtitle").textContent = lang.appSubtitle;
     document.getElementById("sectionInput").innerHTML = `<i class="fas fa-keyboard text-blue-500"></i> ${lang.sectionInput}`;
     document.getElementById("sectionVars").innerHTML = `<i class="fas fa-list-ol text-blue-500"></i> ${lang.sectionVars}`;
-    document.getElementById("sectionExamples").innerHTML = `<i class="fas fa-lightbulb text-blue-500"></i> ${lang.sectionExamples}`;
+
+    const sectionExamplesEl = document.getElementById("sectionExamples");
+    if (sectionExamplesEl) {
+        sectionExamplesEl.innerHTML = `<i class="fas fa-layer-group text-blue-500"></i> ${lang.sectionExamples}`;
+    }
+
+    const historyTitleEl = document.getElementById("historyTitle");
+    if (historyTitleEl) {
+        historyTitleEl.innerHTML = `<i class="fas fa-history text-blue-500"></i> ${lang.sectionHistory}`;
+    }
+
+    // Translate SOP and POS titles
+    const sopTitleEl = document.getElementById("sopTitle");
+    if (sopTitleEl) {
+        sopTitleEl.innerHTML = `<i class="fas fa-plus text-green-500"></i> ${lang.sopTitle}`;
+    }
+
+    const posTitleEl = document.getElementById("posTitle");
+    if (posTitleEl) {
+        posTitleEl.innerHTML = `<i class="fas fa-times text-red-500"></i> ${lang.posTitle}`;
+    }
+
+    const sopStandardTitleEl = document.getElementById("sopStandardExprTitle");
+    if (sopStandardTitleEl) {
+        sopStandardTitleEl.textContent = lang.standardExpression;
+    }
+
+    const posStandardTitleEl = document.getElementById("posStandardExprTitle");
+    if (posStandardTitleEl) {
+        posStandardTitleEl.textContent = lang.standardExpression;
+    }
+
+    // Translate example labels
+    const exampleLabels = {
+        pt: ["Lei da Absorção", "Teorema de De Morgan", "Adjacência Lógica", "Teorema do Consenso", "Padrão de Paridade"],
+        en: ["Absorption Law", "De Morgan's Theorem", "Logical Adjacency", "Consensus Theorem", "Parity Pattern"]
+    };
+
+    const labels = exampleLabels[currentLang];
+    for (let i = 1; i <= 5; i++) {
+        const el = document.getElementById(`example${i}Label`);
+        if (el && labels[i - 1]) {
+            el.textContent = labels[i - 1];
+        }
+    }
+
+    // Translate expression error message
+    const expressionError = document.getElementById('expressionError');
+    if (expressionError) {
+        expressionError.textContent = lang.expressionError;
+    }
+
+    // Translate operators section
+    const operatorsDiv = document.querySelector('.mt-3.p-3.bg-gray-50');
+    if (operatorsDiv) {
+        const title = operatorsDiv.querySelector('.text-xs.font-bold');
+        if (title) {
+            title.textContent = currentLang === 'en' ? 'Operators:' : 'Operadores:';
+        }
+    }
 
     document.getElementById("expressionInput").placeholder = lang.expressionPlaceholder;
     if (document.getElementById("detectedText"))
@@ -136,6 +228,23 @@ function translatePage() {
     const btnClr = document.getElementById("btnClear");
     if (btnCalc) btnCalc.textContent = lang.calculate;
     if (btnClr) btnClr.textContent = lang.clear;
+
+    // Translate clear history button
+    const clearHistoryBtn = document.querySelector('button[onclick="clearHistory()"]');
+    if (clearHistoryBtn) {
+        clearHistoryBtn.innerHTML = `<i class="fas fa-trash-alt"></i> ${lang.clearHistory}`;
+    }
+
+    // Translate PDF button and description
+    const btnFullReport = document.getElementById("btnFullReport");
+    if (btnFullReport) {
+        btnFullReport.innerHTML = `<i class="fas fa-file-pdf"></i> ${lang.savePDF}`;
+    }
+
+    const pdfDescription = document.querySelector('p.text-xs.text-gray-500');
+    if (pdfDescription) {
+        pdfDescription.textContent = lang.pdfDescription;
+    }
 
     renderAll();
 }
@@ -242,8 +351,9 @@ function renderAll() {
 }
 
 function renderTruthTable() {
+    ensureVariables();
     const table = document.getElementById('truthTable');
-    const varNames = currentVariables.length ? currentVariables : ['A', 'B', 'C', 'D'].slice(0, currentVarCount);
+    const varNames = currentVariables.slice(0, currentVarCount);
 
     let html = `
         <thead>
@@ -282,8 +392,10 @@ function renderKMap() {
     const container = document.getElementById('kmapContainer');
     const varCount = currentVarCount;
 
+    ensureVariables();
+
     if (varCount > 4) {
-        container.innerHTML = `<p class="text-amber-600 font-medium">Mapa de Karnaugh disponível apenas para até 4 variáveis.</p>`;
+        container.innerHTML = `<p class="text-amber-600 font-medium">${t('kmapLimit')}</p>`;
         return;
     }
 
@@ -387,7 +499,8 @@ function updateSimplifiedExpression() {
 }
 
 function simplifyWithSteps(minterms, varCount) {
-    const varNames = currentVariables.length ? currentVariables : ['A', 'B', 'C', 'D'].slice(0, varCount);
+    ensureVariables();
+    const varNames = currentVariables.slice(0, varCount);
     let steps = [];
 
     steps.push(`${t('mintermsIdentified')}: ${minterms.join(', ')}`);
@@ -604,10 +717,10 @@ function downloadTruthTablePDF() {
 function toggleExamples() {
     const content = document.getElementById('examplesContent');
     const chevron = document.getElementById('examplesChevron');
-    
+
     // Mostra/esconde o seu conteúdo original
     content.classList.toggle('hidden');
-    
+
     // Gira a setinha
     if (content.classList.contains('hidden')) {
         chevron.classList.remove('rotate-180');
@@ -624,17 +737,17 @@ function downloadSOPPDF() {
 
     const btn = element.querySelector('button');
     const watermark = document.getElementById('watermarkSOP');
-    
+
     // Procura a div que envolve a tabela e cria a barra de rolagem
-    const tableContainer = element.querySelector('.overflow-x-auto'); 
-    
+    const tableContainer = element.querySelector('.overflow-x-auto');
+
     // 1. PREPARAR O TERRENO (Remover limites e botões)
     if (btn) btn.style.display = 'none';
     if (watermark) {
         watermark.classList.remove('hidden');
         watermark.style.setProperty('display', 'block', 'important');
     }
-    
+
     // O SEGREDO DA CORREÇÃO: Forçar o card e a tabela a mostrarem 100% do conteúdo
     element.classList.remove('overflow-hidden', 'h-full');
     element.style.height = 'max-content';
@@ -644,7 +757,7 @@ function downloadSOPPDF() {
     }
 
     const opt = {
-        margin: 10, 
+        margin: 10,
         filename: 'Soma_de_Produtos_SOP.pdf',
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: { scale: 2, useCORS: true, scrollY: 0 }, // scrollY: 0 ajuda a alinhar o print
@@ -660,7 +773,7 @@ function downloadSOPPDF() {
                 watermark.classList.add('hidden');
                 watermark.style.removeProperty('display');
             }
-            
+
             // Devolve as restrições de tamanho da tela original
             element.classList.add('overflow-hidden', 'h-full');
             element.style.height = '';
@@ -678,15 +791,15 @@ function downloadPOSPDF() {
 
     const btn = element.querySelector('button');
     const watermark = document.getElementById('watermarkPOS');
-    const tableContainer = element.querySelector('.overflow-x-auto'); 
-    
+    const tableContainer = element.querySelector('.overflow-x-auto');
+
     // 1. PREPARAR O TERRENO
     if (btn) btn.style.display = 'none';
     if (watermark) {
         watermark.classList.remove('hidden');
         watermark.style.setProperty('display', 'block', 'important');
     }
-    
+
     // Forçar expansão total
     element.classList.remove('overflow-hidden', 'h-full');
     element.style.height = 'max-content';
@@ -696,7 +809,7 @@ function downloadPOSPDF() {
     }
 
     const opt = {
-        margin: 10, 
+        margin: 10,
         filename: 'Produto_de_Somas_POS.pdf',
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: { scale: 2, useCORS: true, scrollY: 0 },
@@ -711,7 +824,7 @@ function downloadPOSPDF() {
                 watermark.classList.add('hidden');
                 watermark.style.removeProperty('display');
             }
-            
+
             element.classList.add('overflow-hidden', 'h-full');
             element.style.height = '';
             if (tableContainer) {
@@ -724,21 +837,24 @@ function downloadPOSPDF() {
 
 // ==================== CÁLCULO DE SOP (Mintermos) ====================
 function renderSOP() {
+    ensureVariables();
     const table = document.getElementById('sopTable');
     const exprDiv = document.getElementById('sopExpression');
-    const defaultVars = ['A', 'B', 'C', 'D']; // Nossa rede de segurança
-    
+    const defaultVars = ['A', 'B', 'C', 'D', 'E']; // Nossa rede de segurança
+
+    const productTermLabel = currentLang === 'en' ? 'Product Term' : 'Termo Produto';
+
     // Cabeçalho
     let html = `<thead><tr class="bg-gray-100 dark:bg-[#1e1e1e] text-gray-600 dark:text-gray-400 border-b border-gray-200 dark:border-[#3c3c3c]">
                     <th class="p-2">m(i)</th>`;
-    
+
     // Puxa as variáveis de forma segura
     for (let j = 0; j < currentVarCount; j++) {
         let varName = currentVariables[j] || defaultVars[j];
         html += `<th class="p-2">${varName}</th>`;
     }
-    html += `<th class="p-2 text-green-600 dark:text-green-400">Termo Produto</th></tr></thead><tbody>`;
-    
+    html += `<th class="p-2 text-green-600 dark:text-green-400">${productTermLabel}</th></tr></thead><tbody>`;
+
     let terms = [];
     let hasMinterms = false;
 
@@ -747,19 +863,19 @@ function renderSOP() {
             hasMinterms = true;
             let binaryStr = i.toString(2).padStart(currentVarCount, '0');
             let term = '';
-            
+
             let rowHtml = `<tr class="border-b border-gray-100 dark:border-[#3c3c3c] hover:bg-gray-50 dark:hover:bg-[#2a2a2a] transition-colors"><td class="p-2 font-mono text-gray-500">m${i}</td>`;
-            
+
             for (let j = 0; j < currentVarCount; j++) {
                 let bit = binaryStr[j];
                 rowHtml += `<td class="p-2">${bit}</td>`;
-                
+
                 // Variável segura
                 let varName = currentVariables[j] || defaultVars[j];
                 term += (bit === '1') ? varName : `~${varName}`;
                 if (j < currentVarCount - 1) term += '.';
             }
-            
+
             rowHtml += `<td class="p-2 font-bold text-green-600 dark:text-green-400 font-mono">${term}</td></tr>`;
             html += rowHtml;
             terms.push(term);
@@ -767,27 +883,30 @@ function renderSOP() {
     });
 
     html += '</tbody>';
-    table.innerHTML = hasMinterms ? html : `<tr><td colspan="${currentVarCount + 2}" class="p-4 text-gray-500 text-sm">Nenhum mintermo (S=1) encontrado.</td></tr>`;
+    table.innerHTML = hasMinterms ? html : `<tr><td colspan="${currentVarCount + 2}" class="p-4 text-gray-500 text-sm">${t('noMintermsFound')}</td></tr>`;
     exprDiv.innerHTML = hasMinterms ? terms.join(' + ') : '0';
 }
 
 // ==================== CÁLCULO DE POS (Maxtermos) ====================
 function renderPOS() {
+    ensureVariables();
     const table = document.getElementById('posTable');
     const exprDiv = document.getElementById('posExpression');
-    const defaultVars = ['A', 'B', 'C', 'D']; // Nossa rede de segurança
-    
+    const defaultVars = ['A', 'B', 'C', 'D', 'E']; // Nossa rede de segurança
+
+    const sumTermLabel = currentLang === 'en' ? 'Sum Term' : 'Termo Soma';
+
     // Cabeçalho
     let html = `<thead><tr class="bg-gray-100 dark:bg-[#1e1e1e] text-gray-600 dark:text-gray-400 border-b border-gray-200 dark:border-[#3c3c3c]">
                     <th class="p-2">M(i)</th>`;
-                    
+
     // Puxa as variáveis de forma segura
     for (let j = 0; j < currentVarCount; j++) {
         let varName = currentVariables[j] || defaultVars[j];
         html += `<th class="p-2">${varName}</th>`;
     }
-    html += `<th class="p-2 text-red-600 dark:text-red-400">Termo Soma</th></tr></thead><tbody>`;
-    
+    html += `<th class="p-2 text-red-600 dark:text-red-400">${sumTermLabel}</th></tr></thead><tbody>`;
+
     let terms = [];
     let hasMaxterms = false;
 
@@ -796,20 +915,20 @@ function renderPOS() {
             hasMaxterms = true;
             let binaryStr = i.toString(2).padStart(currentVarCount, '0');
             let term = '(';
-            
+
             let rowHtml = `<tr class="border-b border-gray-100 dark:border-[#3c3c3c] hover:bg-gray-50 dark:hover:bg-[#2a2a2a] transition-colors"><td class="p-2 font-mono text-gray-500">M${i}</td>`;
-            
+
             for (let j = 0; j < currentVarCount; j++) {
                 let bit = binaryStr[j];
                 rowHtml += `<td class="p-2">${bit}</td>`;
-                
+
                 // Variável segura
                 let varName = currentVariables[j] || defaultVars[j];
                 term += (bit === '0') ? varName : `~${varName}`;
                 if (j < currentVarCount - 1) term += ' + ';
             }
             term += ')';
-            
+
             rowHtml += `<td class="p-2 font-bold text-red-600 dark:text-red-400 font-mono">${term}</td></tr>`;
             html += rowHtml;
             terms.push(term);
@@ -817,219 +936,92 @@ function renderPOS() {
     });
 
     html += '</tbody>';
-    table.innerHTML = hasMaxterms ? html : `<tr><td colspan="${currentVarCount + 2}" class="p-4 text-gray-500 text-sm">Nenhum maxtermo (S=0) encontrado.</td></tr>`;
+    table.innerHTML = hasMaxterms ? html : `<tr><td colspan="${currentVarCount + 2}" class="p-4 text-gray-500 text-sm">${t('noMaxtermsFound')}</td></tr>`;
     exprDiv.innerHTML = hasMaxterms ? terms.join(' . ') : '1';
 }
 
 // ==================== EXPORTAÇÃO PARA PDF (DEFINITIVA - PÁGINA NA MEMÓRIA) ====================
 
 function downloadFullReport() {
-    // Altera o botão para mostrar que está a carregar
-    const btn = document.getElementById('btnFullReport');
-    const originalHtml = btn.innerHTML;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processando...';
-    btn.style.pointerEvents = 'none';
-    
 
-    // 1. Clonar os cartões (Copia os dados, mas não mexe no seu site)
-    const truthTable = document.getElementById('truthTableCard').cloneNode(true);
-    const kmap = document.getElementById('kmapCard').cloneNode(true);
-    const sop = document.getElementById('sopCard').cloneNode(true);
-    const pos = document.getElementById('posCard').cloneNode(true);
-    const steps = document.getElementById('resultSection').cloneNode(true);
+    const element = document.getElementById('fullReportArea');
+    const pdfSection = document.querySelector('.md\\:w-64');
 
-    const allClones = [truthTable, kmap, sop, pos, steps];
+    // ESCONDE O BALÃO COMPLETO
+    if (pdfSection) {
+    pdfSection.style.visibility = 'hidden';
+}
 
-    // 2. Limpeza brutal (O Exterminador de Modo Escuro)
-    allClones.forEach(clone => {
-        // Remove botões e marcas de água da cópia
-        clone.querySelectorAll('button').forEach(b => b.remove());
-        clone.querySelectorAll('[id^="watermark"]').forEach(w => w.remove());
-
-        // Força papel branco, borda leve e remove restrições de tamanho
-        clone.style.backgroundColor = '#ffffff';
-        clone.style.border = '1px solid #e5e7eb';
-        clone.style.borderRadius = '8px';
-        clone.style.padding = '20px';
-        clone.style.boxShadow = 'none';
-        clone.style.height = 'auto'; 
-
-        // Solta as tabelas (evita cortes nas bordas)
-        clone.querySelectorAll('.overflow-x-auto').forEach(sa => {
-            sa.className = ''; 
-            sa.style.overflow = 'visible';
-            sa.style.width = '100%';
-        });
-
-        // Arranca o Tailwind Dark Mode à força e pinta tudo de preto
-        clone.querySelectorAll('*').forEach(el => {
-            if (el.className && typeof el.className === 'string') {
-                el.className = el.className.replace(/dark:[^\s]+/g, '');
-            }
-            
-            // Mantém as células do mapa azuis
-            if (el.classList && el.classList.contains('active')) {
-                el.style.backgroundColor = '#3b82f6';
-                el.style.color = '#ffffff';
-            } else if (el.tagName !== 'I') { // Não pinta os ícones
-                el.style.color = '#000000';
-            }
-        });
-    });
-
-    // Configuração da aba de passos (garante que está visível na cópia)
-    steps.style.display = 'block';
-    steps.classList.remove('hidden');
-    steps.style.marginTop = '20px';
-    steps.style.backgroundColor = '#f8fafc';
-
-    // 3. Criar a Folha A4 em código (Nunca chega a ir para o ecrã)
-    const printContainer = document.createElement('div');
-    printContainer.style.width = '800px'; // Largura perfeita para A4 Retrato
-    printContainer.style.backgroundColor = '#ffffff';
-    printContainer.style.padding = '20px';
-    printContainer.style.fontFamily = 'sans-serif';
-
-    printContainer.innerHTML = `
-        <div style="text-align: center; margin-bottom: 20px;">
-            <h1 style="font-size: 26px; font-weight: bold; color: #2563eb; margin: 0;">Relatório de Álgebra Booleana</h1>
-            <p style="font-size: 14px; color: #6b7280; font-family: monospace; margin-top: 5px;">Simplificador Lógico - Ânima Study</p>
-        </div>
-
-        <div style="display: flex; gap: 20px; align-items: flex-start; width: 100%;">
-            <div id="print-tt" style="width: 50%;"></div>
-            <div id="print-kmap" style="width: 50%;"></div>
-        </div>
-
-        <div id="print-steps" style="width: 100%;"></div>
-
-        <div class="html2pdf__page-break"></div>
-
-        <div style="text-align: center; margin-bottom: 20px; padding-top: 20px;">
-            <h2 style="font-size: 20px; font-weight: bold; color: #2563eb;">Formas Canônicas (SOP e POS)</h2>
-        </div>
-        
-        <div style="display: flex; gap: 20px; align-items: flex-start; width: 100%;">
-            <div id="print-sop" style="width: 50%;"></div>
-            <div id="print-pos" style="width: 50%;"></div>
-        </div>
-    `;
-
-    // 4. Injeta as tabelas limpas nas devidas gavetas da folha
-    printContainer.querySelector('#print-tt').appendChild(truthTable);
-    printContainer.querySelector('#print-kmap').appendChild(kmap);
-    printContainer.querySelector('#print-steps').appendChild(steps);
-    printContainer.querySelector('#print-sop').appendChild(sop);
-    printContainer.querySelector('#print-pos').appendChild(pos);
-
-    // 5. Configuração Exata para Modo Retrato (Em Pé)
     const opt = {
-        margin:       10, 
-        filename:     'Relatorio_Completo_Anima.pdf',
-        image:        { type: 'jpeg', quality: 1.0 },
-        html2canvas:  { scale: 2, useCORS: true }, 
-        pagebreak:    { mode: ['css', 'legacy'] }, // Avisa o motor para respeitar a quebra de página
-        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' } // Formato Retrato
+        margin: 0.3,
+        filename: 'relatorio-logica.pdf',
+        image: { type: 'jpeg', quality: 1 },
+
+        html2canvas: {
+            scale: 2,
+            useCORS: true,
+            backgroundColor: null,
+            scrollX: 0,
+            scrollY: 0
+        },
+
+        jsPDF: {
+            unit: 'in',
+            format: 'a4',
+            orientation: 'portrait'
+        },
+
+        pagebreak: {
+            mode: ['avoid-all', 'css', 'legacy']
+        }
     };
 
-    // 6. GERAÇÃO (Direto da memória para o seu PC)
-    html2pdf().set(opt).from(printContainer).save().then(() => {
-        // Oculta o estado de "Processando..." do botão e restaura
-        btn.innerHTML = originalHtml;
-        btn.style.pointerEvents = 'auto';
-    }).catch(err => {
-        console.error("Erro na geração do PDF:", err);
-        btn.innerHTML = originalHtml;
-        btn.style.pointerEvents = 'auto';
-        alert("Ocorreu um erro ao gerar o PDF. Verifique a consola.");
-    });
+    // Cards que vão receber assinatura
+const cards = [
+    document.getElementById('truthTableCard'),
+    document.getElementById('kmapCard'),
+    document.getElementById('sopCard'),
+    document.getElementById('posCard')
+];
+
+// Adiciona assinatura temporária
+cards.forEach(card => {
+
+    const assinatura = document.createElement('div');
+
+    assinatura.className = 'temp-pdf-signature';
+
+    assinatura.innerText = 'Gerado por calculadora digital.com';
+
+    assinatura.style.marginTop = '20px';
+    assinatura.style.paddingTop = '8px';
+    assinatura.style.borderTop = '1px solid #ddd';
+    assinatura.style.textAlign = 'center';
+    assinatura.style.fontSize = '10px';
+    assinatura.style.color = 'rgba(120,120,120,0.45)';
+    assinatura.style.fontStyle = 'italic';
+
+    card.appendChild(assinatura);
+});
+
+    setTimeout(() => {
+
+    html2pdf()
+        .set(opt)
+        .from(element)
+        .save();
+
+}, 100);
+
+
+// Remove assinaturas depois do download iniciar
+setTimeout(() => {
+
+    document.querySelectorAll('.temp-pdf-signature')
+        .forEach(el => el.remove());
+
+}, 1000);
 }
-
-// ==================== MOTOR DO HISTÓRICO ====================
-
-// 1. Inicia a lista buscando o que já está guardado no navegador
-let calcHistory = JSON.parse(localStorage.getItem('booleanaHistory')) || [];
-
-// 2. Animação de abrir/fechar o balão
-function toggleHistory() {
-    const content = document.getElementById('historyContent');
-    const chevron = document.getElementById('historyChevron');
-    if(content && chevron) {
-        content.classList.toggle('hidden');
-        chevron.style.transform = content.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(180deg)';
-    }
-}
-
-// 3. Guarda a expressão no histórico
-function addToHistory(expression) {
-    if (!expression || expression.trim() === '') return;
-    
-    const cleanExpr = expression.trim().toUpperCase();
-    
-    // Se a expressão for igual à última que calculou, não duplica
-    if (calcHistory.length > 0 && calcHistory[0] === cleanExpr) return;
-
-    calcHistory.unshift(cleanExpr); // Coloca no topo
-    if (calcHistory.length > 10) calcHistory.pop(); // Mantém só as últimas 10
-
-    localStorage.setItem('booleanaHistory', JSON.stringify(calcHistory));
-    renderHistory();
-}
-
-// 4. Desenha a lista na tela
-function renderHistory() {
-    const list = document.getElementById('historyList');
-    const count = document.getElementById('historyCount');
-    
-    if (!list || !count) return;
-
-    count.innerText = calcHistory.length;
-
-    if (calcHistory.length === 0) {
-        list.innerHTML = '<p class="text-xs text-gray-400 dark:text-gray-500 text-center py-2 font-sans">Nenhuma expressão calculada ainda.</p>';
-        return;
-    }
-
-    list.innerHTML = calcHistory.map((expr, index) => `
-        <div class="flex justify-between items-center group border-b border-gray-200 dark:border-[#3c3c3c] pb-2 mb-2 last:border-0 last:pb-0 last:mb-0">
-            <span class="font-bold text-blue-600 dark:text-[#9cdcfe] cursor-pointer hover:underline truncate mr-2" onclick="loadFromHistory('${expr}')" title="Clique para colocar na calculadora">
-                ${expr}
-            </span>
-            <button onclick="removeFromHistory(${index})" class="text-gray-400 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100" title="Remover">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-    `).join('');
-}
-
-// 5. Clica no histórico e joga para a caixa de texto
-function loadFromHistory(expr) {
-    const input = document.getElementById('expressionInput');
-    if(input) {
-        input.value = expr;
-        // Já manda calcular automaticamente!
-        if (typeof calculateFromExpression === 'function') {
-            calculateFromExpression();
-        }
-    }
-}
-
-// 6. Remove uma expressão específica
-function removeFromHistory(index) {
-    calcHistory.splice(index, 1);
-    localStorage.setItem('booleanaHistory', JSON.stringify(calcHistory));
-    renderHistory();
-}
-
-// 7. Limpa tudo
-function clearHistory() {
-    calcHistory = [];
-    localStorage.removeItem('booleanaHistory');
-    renderHistory();
-}
-
-// Atualiza o balão assim que a página carrega
-window.addEventListener('DOMContentLoaded', renderHistory);
 
 // ==================== TECLADO VIRTUAL DE SÍMBOLOS ====================
 function insertSymbol(symbol) {
@@ -1046,7 +1038,7 @@ function insertSymbol(symbol) {
 
     // Empurra o cursor para a frente do símbolo que acabou de ser digitado
     input.selectionStart = input.selectionEnd = start + symbol.length;
-    
+
     // Devolve o foco à caixa de texto para a pessoa continuar a escrever
     input.focus();
 }
@@ -1077,12 +1069,12 @@ function backspaceSymbol() {
     if (start !== end) {
         input.value = text.slice(0, start) + text.slice(end);
         input.selectionStart = input.selectionEnd = start;
-    } 
+    }
     // Se não houver seleção e o cursor não estiver no comecinho (posição 0)
     else if (start > 0) {
         input.value = text.slice(0, start - 1) + text.slice(end);
         input.selectionStart = input.selectionEnd = start - 1;
     }
-    
+
     input.focus();
 }
