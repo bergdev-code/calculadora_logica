@@ -204,6 +204,7 @@ function evaluateExpression(expr, variables) {
 function calculateFromExpression() {
     const input = document.getElementById('expressionInput').value.trim();
     if (!input) return;
+    addToHistory(input);
 
     currentExpression = input;
     currentVariables = extractVariables(input);
@@ -828,6 +829,7 @@ function downloadFullReport() {
     const originalHtml = btn.innerHTML;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processando...';
     btn.style.pointerEvents = 'none';
+    
 
     // 1. Clonar os cartões (Copia os dados, mas não mexe no seu site)
     const truthTable = document.getElementById('truthTableCard').cloneNode(true);
@@ -941,4 +943,146 @@ function downloadFullReport() {
         btn.style.pointerEvents = 'auto';
         alert("Ocorreu um erro ao gerar o PDF. Verifique a consola.");
     });
+}
+
+// ==================== MOTOR DO HISTÓRICO ====================
+
+// 1. Inicia a lista buscando o que já está guardado no navegador
+let calcHistory = JSON.parse(localStorage.getItem('booleanaHistory')) || [];
+
+// 2. Animação de abrir/fechar o balão
+function toggleHistory() {
+    const content = document.getElementById('historyContent');
+    const chevron = document.getElementById('historyChevron');
+    if(content && chevron) {
+        content.classList.toggle('hidden');
+        chevron.style.transform = content.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(180deg)';
+    }
+}
+
+// 3. Guarda a expressão no histórico
+function addToHistory(expression) {
+    if (!expression || expression.trim() === '') return;
+    
+    const cleanExpr = expression.trim().toUpperCase();
+    
+    // Se a expressão for igual à última que calculou, não duplica
+    if (calcHistory.length > 0 && calcHistory[0] === cleanExpr) return;
+
+    calcHistory.unshift(cleanExpr); // Coloca no topo
+    if (calcHistory.length > 10) calcHistory.pop(); // Mantém só as últimas 10
+
+    localStorage.setItem('booleanaHistory', JSON.stringify(calcHistory));
+    renderHistory();
+}
+
+// 4. Desenha a lista na tela
+function renderHistory() {
+    const list = document.getElementById('historyList');
+    const count = document.getElementById('historyCount');
+    
+    if (!list || !count) return;
+
+    count.innerText = calcHistory.length;
+
+    if (calcHistory.length === 0) {
+        list.innerHTML = '<p class="text-xs text-gray-400 dark:text-gray-500 text-center py-2 font-sans">Nenhuma expressão calculada ainda.</p>';
+        return;
+    }
+
+    list.innerHTML = calcHistory.map((expr, index) => `
+        <div class="flex justify-between items-center group border-b border-gray-200 dark:border-[#3c3c3c] pb-2 mb-2 last:border-0 last:pb-0 last:mb-0">
+            <span class="font-bold text-blue-600 dark:text-[#9cdcfe] cursor-pointer hover:underline truncate mr-2" onclick="loadFromHistory('${expr}')" title="Clique para colocar na calculadora">
+                ${expr}
+            </span>
+            <button onclick="removeFromHistory(${index})" class="text-gray-400 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100" title="Remover">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    `).join('');
+}
+
+// 5. Clica no histórico e joga para a caixa de texto
+function loadFromHistory(expr) {
+    const input = document.getElementById('expressionInput');
+    if(input) {
+        input.value = expr;
+        // Já manda calcular automaticamente!
+        if (typeof calculateFromExpression === 'function') {
+            calculateFromExpression();
+        }
+    }
+}
+
+// 6. Remove uma expressão específica
+function removeFromHistory(index) {
+    calcHistory.splice(index, 1);
+    localStorage.setItem('booleanaHistory', JSON.stringify(calcHistory));
+    renderHistory();
+}
+
+// 7. Limpa tudo
+function clearHistory() {
+    calcHistory = [];
+    localStorage.removeItem('booleanaHistory');
+    renderHistory();
+}
+
+// Atualiza o balão assim que a página carrega
+window.addEventListener('DOMContentLoaded', renderHistory);
+
+// ==================== TECLADO VIRTUAL DE SÍMBOLOS ====================
+function insertSymbol(symbol) {
+    const input = document.getElementById('expressionInput');
+    if (!input) return;
+
+    // Apanha a posição exata onde o cursor do rato está a piscar
+    const start = input.selectionStart;
+    const end = input.selectionEnd;
+    const text = input.value;
+
+    // Corta o texto em dois e insere o símbolo no meio
+    input.value = text.slice(0, start) + symbol + text.slice(end);
+
+    // Empurra o cursor para a frente do símbolo que acabou de ser digitado
+    input.selectionStart = input.selectionEnd = start + symbol.length;
+    
+    // Devolve o foco à caixa de texto para a pessoa continuar a escrever
+    input.focus();
+}
+// ==================== TECLADO VIRTUAL DE SÍMBOLOS ====================
+
+function insertSymbol(symbol) {
+    const input = document.getElementById('expressionInput');
+    if (!input) return;
+
+    const start = input.selectionStart;
+    const end = input.selectionEnd;
+    const text = input.value;
+
+    input.value = text.slice(0, start) + symbol + text.slice(end);
+    input.selectionStart = input.selectionEnd = start + symbol.length;
+    input.focus();
+}
+
+function backspaceSymbol() {
+    const input = document.getElementById('expressionInput');
+    if (!input) return;
+
+    const start = input.selectionStart;
+    const end = input.selectionEnd;
+    const text = input.value;
+
+    // Se houver texto selecionado (ex: o usuário selecionou "A+B" para apagar tudo)
+    if (start !== end) {
+        input.value = text.slice(0, start) + text.slice(end);
+        input.selectionStart = input.selectionEnd = start;
+    } 
+    // Se não houver seleção e o cursor não estiver no comecinho (posição 0)
+    else if (start > 0) {
+        input.value = text.slice(0, start - 1) + text.slice(end);
+        input.selectionStart = input.selectionEnd = start - 1;
+    }
+    
+    input.focus();
 }
