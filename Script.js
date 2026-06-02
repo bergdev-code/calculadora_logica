@@ -109,6 +109,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateVarCount(3);
     initExamples();
     translatePage();
+    renderHistory();
 
     // TEMA ESCURO: Inicialização
     const savedTheme = localStorage.getItem("theme");
@@ -448,9 +449,24 @@ function renderTruthTable() {
     table.innerHTML = html;
 }
 
+// ==================== CONTROLE DE CLIQUE (SINCRONIZADO) ====================
 function toggleOutput(index) {
+    // 1. Inverte o valor da célula clicada (se for 0 vira 1, se for 1 vira 0)
     currentOutputs[index] = currentOutputs[index] === 1 ? 0 : 1;
+
+    // 2. Recalcula instantaneamente as tabelas e a expressão simplificada
     renderAll();
+
+    // 3. A MÁGICA: Pega o novo resultado gerado lá embaixo...
+    const novaExpressao = document.getElementById('simplifiedExpression').innerText;
+    const inputField = document.getElementById('expressionInput');
+
+    // 4. ...e atualiza a barra de texto lá em cima automaticamente!
+    if (novaExpressao && novaExpressao !== "0" && novaExpressao !== "1") {
+        inputField.value = novaExpressao;
+    } else {
+        inputField.value = ""; // Limpa a barra se a tabela estiver toda zerada ou toda ligada
+    }
 }
 
 
@@ -565,34 +581,28 @@ function updateSimplifiedExpression() {
     resultSection.classList.remove('hidden');
 }
 
+// ==================== SIMPLIFICAÇÃO E MOTOR QUINE-MCCLUSKEY ====================
 function simplifyWithSteps(minterms, varCount) {
 
     ensureVariables();
-
     const varNames = currentVariables.slice(0, varCount);
     let steps = [];
 
-    steps.push(`${t('essentialPrimeImplicants')}: ${finalImplicants.map(pi => pi.bin).join(', ')}`);
-
-    // ============================
-    // GERAÇÃO DOS PRIME IMPLICANTS
-    // ============================
+    steps.push(`${t('mintermsIdentified')}: ${minterms.join(', ')}`);
 
     let groups = {};
 
     minterms.forEach(m => {
-
         const bin = m.toString(2).padStart(varCount, '0');
         const ones = (bin.match(/1/g) || []).length;
 
         if (!groups[ones]) groups[ones] = [];
 
         groups[ones].push({
-            bin,
+            bin: bin,
             combined: false,
             source: [m]
         });
-
     });
 
     let currentGroups = groups;
@@ -605,271 +615,155 @@ function simplifyWithSteps(minterms, varCount) {
         let foundAnyMatch = false;
         let combinations = 0;
 
-        const keys = Object.keys(currentGroups)
-            .map(Number)
-            .sort((a, b) => a - b);
+        const keys = Object.keys(currentGroups).map(Number).sort((a, b) => a - b);
 
         for (let i = 0; i < keys.length - 1; i++) {
+
+            // CORREÇÃO MATEMÁTICA: Só podemos comparar grupos se a diferença de '1s' for exatamente 1
+            if (keys[i + 1] !== keys[i] + 1) continue;
 
             const groupA = currentGroups[keys[i]];
             const groupB = currentGroups[keys[i + 1]];
 
             groupA.forEach(a => {
-
                 groupB.forEach(b => {
-
                     let diffCount = 0;
                     let diffIndex = -1;
 
                     for (let j = 0; j < varCount; j++) {
-
                         if (a.bin[j] !== b.bin[j]) {
                             diffCount++;
                             diffIndex = j;
                         }
-
                     }
 
                     if (diffCount === 1) {
-
                         foundAnyMatch = true;
-
                         a.combined = true;
                         b.combined = true;
 
-                        const newBin =
-                            a.bin.substring(0, diffIndex) +
-                            '-' +
-                            a.bin.substring(diffIndex + 1);
-
-                        const ones =
-                            (newBin.replace(/-/g, '').match(/1/g) || []).length;
+                        const newBin = a.bin.substring(0, diffIndex) + '-' + a.bin.substring(diffIndex + 1);
+                        const ones = (newBin.match(/1/g) || []).length;
 
                         if (!nextGroups[ones]) {
                             nextGroups[ones] = [];
                         }
 
                         if (!nextGroups[ones].some(x => x.bin === newBin)) {
-
                             nextGroups[ones].push({
                                 bin: newBin,
                                 combined: false,
-                                source: [...new Set([
-                                    ...a.source,
-                                    ...b.source
-                                ])]
+                                source: [...new Set([...a.source, ...b.source])]
                             });
-
                             combinations++;
-
                         }
-
                     }
-
                 });
-
             });
-
         }
 
-        Object.values(currentGroups)
-            .flat()
-            .forEach(item => {
-
-                if (
-                    !item.combined &&
-                    !primeImplicants.some(pi => pi.bin === item.bin)
-                ) {
-                    primeImplicants.push(item);
-                }
-
-            });
+        // CORREÇÃO CRÍTICA: Substituído o .flat() pelo .reduce para compatibilidade em 100% dos navegadores!
+        Object.values(currentGroups).reduce((acc, val) => acc.concat(val), []).forEach(item => {
+            if (!item.combined && !primeImplicants.some(pi => pi.bin === item.bin)) {
+                primeImplicants.push(item);
+            }
+        });
 
         if (foundAnyMatch) {
-
-            steps.push(
-                `${t('stage')} ${stage}: ${t('combinedDoubles')} ${combinations} ${t('doubles')}.`
-            );
-
+            steps.push(`${t('stage')} ${stage}: ${t('combinedDoubles')} ${combinations} ${t('doubles')}.`);
             stage++;
         }
 
         if (!foundAnyMatch) break;
-
         currentGroups = nextGroups;
-
     }
 
-    steps.push(
-        `${t('primeImplicantsFound')}: ${primeImplicants.map(pi => pi.bin).join(', ')}`
-    );
+    steps.push(`${t('primeImplicantsFound')}: ${primeImplicants.map(pi => pi.bin).join(', ')}`);
 
-    // ============================
-    // TABELA DE COBERTURA
-    // ============================
-
+    // --- TABELA DE COBERTURA ---
     function coversMinterm(implicant, minterm) {
-
-        const binary =
-            minterm.toString(2).padStart(varCount, '0');
-
+        const binary = minterm.toString(2).padStart(varCount, '0');
         for (let i = 0; i < implicant.length; i++) {
-
-            if (
-                implicant[i] !== '-' &&
-                implicant[i] !== binary[i]
-            ) {
+            if (implicant[i] !== '-' && implicant[i] !== binary[i]) {
                 return false;
             }
-
         }
-
         return true;
-
     }
 
     const coverageTable = {};
-
     minterms.forEach(minterm => {
-
         coverageTable[minterm] = [];
-
         primeImplicants.forEach((pi, index) => {
-
             if (coversMinterm(pi.bin, minterm)) {
                 coverageTable[minterm].push(index);
             }
-
         });
-
     });
 
-    // ============================
-    // ESSENTIAL PRIME IMPLICANTS
-    // ============================
-
     const selected = new Set();
-
     Object.values(coverageTable).forEach(indices => {
-
         if (indices.length === 1) {
             selected.add(indices[0]);
         }
-
     });
 
-    // ============================
-    // COBERTURA DOS RESTANTES
-    // ============================
-
     const coveredMinterms = new Set();
-
     selected.forEach(index => {
-
         minterms.forEach(m => {
-
-            if (
-                coversMinterm(
-                    primeImplicants[index].bin,
-                    m
-                )
-            ) {
+            if (coversMinterm(primeImplicants[index].bin, m)) {
                 coveredMinterms.add(m);
             }
-
         });
-
     });
 
     while (coveredMinterms.size < minterms.length) {
-
         let bestPI = -1;
         let bestCoverage = -1;
 
         primeImplicants.forEach((pi, index) => {
-
             if (selected.has(index)) return;
-
             let count = 0;
-
             minterms.forEach(m => {
-
-                if (
-                    !coveredMinterms.has(m) &&
-                    coversMinterm(pi.bin, m)
-                ) {
+                if (!coveredMinterms.has(m) && coversMinterm(pi.bin, m)) {
                     count++;
                 }
-
             });
-
             if (count > bestCoverage) {
-
                 bestCoverage = count;
                 bestPI = index;
-
             }
-
         });
 
         if (bestPI === -1) break;
 
         selected.add(bestPI);
-
         minterms.forEach(m => {
-
-            if (
-                coversMinterm(
-                    primeImplicants[bestPI].bin,
-                    m
-                )
-            ) {
+            if (coversMinterm(primeImplicants[bestPI].bin, m)) {
                 coveredMinterms.add(m);
             }
-
         });
-
     }
 
-    // ============================
-    // EXPRESSÃO FINAL
-    // ============================
-
-    const finalImplicants =
-        [...selected].map(i => primeImplicants[i]);
-
-    steps.push(
-        `Essential Prime Implicants: ${finalImplicants.map(pi => pi.bin).join(', ')
-        }`
-    );
+    const finalImplicants = [...selected].map(i => primeImplicants[i]);
+    steps.push(`${t('essentialPrimeImplicants')}: ${finalImplicants.map(pi => pi.bin).join(', ')}`);
 
     const terms = finalImplicants.map(pi => {
-
         const parts = [];
-
         for (let i = 0; i < varCount; i++) {
-
             if (pi.bin[i] === '1') {
                 parts.push(varNames[i]);
-            }
-
-            else if (pi.bin[i] === '0') {
+            } else if (pi.bin[i] === '0') {
                 parts.push('~' + varNames[i]);
             }
-
         }
-
-        return parts.length
-            ? parts.join(' . ')
-            : '1';
-
+        return parts.length ? parts.join(' . ') : '1';
     });
 
     return {
         expression: terms.join(' + ') || '0',
-        steps
+        steps: steps
     };
-
 }
 
 // ==================== UTILITIES ====================
@@ -1244,90 +1138,98 @@ function renderPOS() {
     exprDiv.innerHTML = hasMaxterms ? terms.join(' . ') : '1';
 }
 
-// ==================== EXPORTAÇÃO PARA PDF (DEFINITIVA - PÁGINA NA MEMÓRIA) ====================
-
+// ==================== EXPORTAÇÃO PARA PDF (RELATÓRIO COMPLETO) ====================
 function downloadFullReport() {
-
-    if (currentVariables.length === 5) {
-        alert(t('pdf5VarsLimit'));
+    if (currentVarCount >= 5) {
+        alert(t('pdf5VarsLimit') || "A exportação PDF não está disponível para funções com 5 variáveis.");
         return;
     }
 
-    sopCard.classList.remove('pdf-compact');
-    posCard.classList.remove('pdf-compact');
-
     const element = document.getElementById('fullReportArea');
-
-    // ELEMENTOS QUE NÃO DEVEM APARECER
     const pdfCard = document.getElementById('pdfCard');
     const btnPdf = document.getElementById('btnFullReport');
-
-    // Esconde antes de gerar
-    if (pdfCard) pdfCard.style.display = 'none';
-    if (btnPdf) btnPdf.style.display = 'none';
-
-    const opt = {
-        margin: 0.3,
-        filename: 'relatorio-logico.pdf',
-        image: {
-            type: 'jpeg',
-            quality: 1
-        },
-        html2canvas: {
-            scale: 2,
-            useCORS: true,
-            scrollY: 0
-        },
-        jsPDF: {
-            unit: 'in',
-            format: 'a4',
-            orientation: 'portrait'
-        },
-        pagebreak: {
-            mode: ['avoid-all', 'css', 'legacy']
-        }
-    };
-
     const sopCard = document.getElementById('sopCard');
     const posCard = document.getElementById('posCard');
 
-    html2pdf()
-        .set(opt)
-        .from(element)
-        .save()
-        .then(() => {
+    const watermarks = element.querySelectorAll('.watermark-logo');
+    const innerButtons = element.querySelectorAll('button');
 
-            // Mostra novamente após gerar
-            if (pdfCard) pdfCard.style.display = '';
-            if (btnPdf) btnPdf.style.display = '';
+    // Identifica o contêiner pai que segura o SOP e o POS juntos (a grade)
+    const sopPosContainer = sopCard ? sopCard.parentElement : null;
 
-        })
-        .catch(() => {
+    if (pdfCard) pdfCard.style.display = 'none';
+    if (btnPdf) btnPdf.style.display = 'none';
 
+    innerButtons.forEach(btn => btn.style.display = 'none');
+    watermarks.forEach(w => w.classList.remove('hidden'));
 
-            if (pdfCard) pdfCard.style.display = '';
-            if (btnPdf) btnPdf.style.display = '';
-
-        })
-
-    let originalSopTransform = '';
-    let originalPosTransform = '';
-
-    if (currentVariables.length === 4) {
-
-        originalSopTransform = sopCard.style.transform;
-        originalPosTransform = posCard.style.transform;
-
-        sopCard.style.transform = 'scale(0.85)';
-        posCard.style.transform = 'scale(0.85)';
-
-        sopCard.style.transformOrigin = 'top center';
-        posCard.style.transformOrigin = 'top center';
-
-        sopCard.style.marginBottom = '-80px';
-        posCard.style.marginBottom = '-80px';
+    // A MÁGICA: Força a quebra de página empurrando o bloco para a página 2
+    if (sopPosContainer) {
+        sopPosContainer.style.pageBreakBefore = 'always';
+        sopPosContainer.style.breakBefore = 'page';
+        // Garante que o conteúdo dentro dele também não se quebre no meio
+        sopPosContainer.style.pageBreakInside = 'avoid';
+        sopPosContainer.style.breakInside = 'avoid';
     }
 
+    const tableCells = element.querySelectorAll('td, th');
+    let originalPaddings = [];
+    let originalFonts = [];
+
+    if (currentVarCount === 4) {
+        tableCells.forEach((cell, index) => {
+            originalPaddings[index] = cell.style.padding;
+            originalFonts[index] = cell.style.fontSize;
+            cell.style.padding = '4px';
+            cell.style.fontSize = '12px';
+        });
+    }
+
+    // A configuração do PDF agora aceita nossa regra de CSS ('css')
+    const opt = {
+        margin: 0.3,
+        filename: 'relatorio-logico.pdf',
+        image: { type: 'jpeg', quality: 1 },
+        html2canvas: { scale: 2, useCORS: true, scrollY: 0 },
+        jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' },
+        pagebreak: { mode: ['css', 'legacy'] }
+    };
+
+    setTimeout(() => {
+        html2pdf()
+            .set(opt)
+            .from(element)
+            .save()
+            .then(() => {
+                restaurarTela();
+            })
+            .catch((err) => {
+                console.error("Erro fatal ao gerar PDF:", err);
+                restaurarTela();
+            });
+
+        function restaurarTela() {
+            if (pdfCard) pdfCard.style.display = '';
+            if (btnPdf) btnPdf.style.display = '';
+            innerButtons.forEach(btn => btn.style.display = '');
+            watermarks.forEach(w => w.classList.add('hidden'));
+
+            // Remove as regras de quebra de página para o site não ficar desconfigurado
+            if (sopPosContainer) {
+                sopPosContainer.style.pageBreakBefore = '';
+                sopPosContainer.style.breakBefore = '';
+                sopPosContainer.style.pageBreakInside = '';
+                sopPosContainer.style.breakInside = '';
+            }
+
+            if (currentVarCount === 4) {
+                tableCells.forEach((cell, index) => {
+                    cell.style.padding = originalPaddings[index] || '';
+                    cell.style.fontSize = originalFonts[index] || '';
+                });
+            }
+        }
+    }, 100);
 }
 
 // ==================== TECLADO VIRTUAL DE SÍMBOLOS ====================
@@ -1367,15 +1269,31 @@ function backspaceSymbol() {
     input.focus();
 }
 
+// ==================== EXPORTAÇÃO PARA PDF (SEÇÕES INDIVIDUAIS) ====================
+// ==================== EXPORTAÇÃO PARA PDF (SEÇÕES INDIVIDUAIS) ====================
 function downloadSectionPDF(sectionId, filename) {
+    // 1. TRAVA ABSOLUTA: Bloqueia o download individual se houver 5 variáveis
+    if (currentVarCount >= 5) {
+        alert(t('pdf5VarsLimit') || "A exportação PDF não está disponível para funções com 5 variáveis.");
+        return;
+    }
 
     const element = document.getElementById(sectionId);
+    if (!element) return;
 
     const buttons = element.querySelectorAll('button');
+    const watermark = element.querySelector('.watermark-logo');
 
-    buttons.forEach(btn => btn.style.display = 'none');
+    // 2. Esconde o botão e evita que ele saia no PDF
+    buttons.forEach(btn => {
+        btn.style.display = 'none';
+        btn.setAttribute('data-html2canvas-ignore', 'true');
+    });
 
-    // força expansão completa
+    // 3. Mostra a marca d'água
+    if (watermark) watermark.classList.remove('hidden');
+
+    // 4. Força expansão completa para não cortar a tabela
     const originalHeight = element.style.height;
     const originalDisplay = element.style.display;
 
@@ -1383,74 +1301,85 @@ function downloadSectionPDF(sectionId, filename) {
     element.style.display = 'block';
 
     const wrappers = element.querySelectorAll('.overflow-x-auto');
-
     wrappers.forEach(w => {
         w.dataset.originalOverflow = w.style.overflow;
         w.style.overflow = 'visible';
     });
 
+    // 5. Aguarda meio segundo e tira a foto
     setTimeout(() => {
-
         html2pdf()
             .set({
                 margin: 5,
                 filename: filename,
-                image: {
-                    type: 'jpeg',
-                    quality: 1
-                },
-                html2canvas: {
-                    scale: 3,
-                    useCORS: true,
-                    scrollX: 0,
-                    scrollY: 0
-                },
-                jsPDF: {
-                    unit: 'mm',
-                    format: 'a4',
-                    orientation: 'portrait'
-                }
+                image: { type: 'jpeg', quality: 1 },
+                html2canvas: { scale: 3, useCORS: true, scrollX: 0, scrollY: 0 },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
             })
             .from(element)
             .save()
             .then(() => {
-
-                buttons.forEach(btn => btn.style.display = '');
-
-                element.style.height = originalHeight;
-                element.style.display = originalDisplay;
-
-                wrappers.forEach(w => {
-                    w.style.overflow = w.dataset.originalOverflow || '';
-                });
-
+                restaurarSessao(); // Deu certo! Devolve tudo ao normal
+            })
+            .catch((err) => {
+                console.error("Erro ao gerar PDF da seção:", err);
+                restaurarSessao(); // Deu erro! Mas devolve tudo ao normal do mesmo jeito
             });
 
+        // Função auxiliar que garante que a interface volte ao normal
+        function restaurarSessao() {
+            buttons.forEach(btn => {
+                btn.style.display = '';
+                btn.removeAttribute('data-html2canvas-ignore');
+            });
+
+            if (watermark) watermark.classList.add('hidden');
+
+            element.style.height = originalHeight;
+            element.style.display = originalDisplay;
+
+            wrappers.forEach(w => {
+                w.style.overflow = w.dataset.originalOverflow || '';
+            });
+        }
     }, 500);
 }
 
 // ==================== HISTÓRICO DE EXPRESSÕES ====================
 
-// Variável global para armazenar as expressões (coloque junto com o let currentExpression = ""; lá no topo, ou deixe aqui)
+// 1. Variável de segurança
 let expressionHistory = [];
+
+// 2. Tenta resgatar a memória com proteção contra erros (impede a tela de travar)
+try {
+    const savedHistory = localStorage.getItem('syslogic_history');
+    if (savedHistory) {
+        expressionHistory = JSON.parse(savedHistory);
+    }
+} catch (e) {
+    console.warn("Erro ao ler o histórico ou navegador bloqueou o acesso.", e);
+    expressionHistory = [];
+}
 
 function addToHistory(expr) {
     if (!expr) return;
 
-    // Procura se a expressão já existe no histórico
     const existingIndex = expressionHistory.indexOf(expr);
-
-    // Se ela já existir, removemos da posição atual
     if (existingIndex !== -1) {
         expressionHistory.splice(existingIndex, 1);
     }
 
-    // Adicionamos a expressão no topo (início do array)
     expressionHistory.unshift(expr);
 
-    // Limita o histórico às últimas 10 expressões
     if (expressionHistory.length > 10) {
         expressionHistory.pop();
+    }
+
+    // 3. Tenta salvar na memória (Ignora o erro se estiver em file:///)
+    try {
+        localStorage.setItem('syslogic_history', JSON.stringify(expressionHistory));
+    } catch (e) {
+        console.warn("O salvamento local foi bloqueado pelo navegador.");
     }
 
     renderHistory();
@@ -1462,19 +1391,16 @@ function renderHistory() {
 
     if (!listDiv || !countSpan) return;
 
-    // Atualiza a bolinha com o número de itens
     countSpan.textContent = expressionHistory.length;
 
-    // Se estiver vazio, mostra a mensagem traduzida
     if (expressionHistory.length === 0) {
         listDiv.innerHTML = `<p class="text-gray-500 italic text-center py-2 text-xs">${t('historyEmpty')}</p>`;
         return;
     }
 
-    // Renderiza a lista com botão de clique para recarregar
     listDiv.innerHTML = expressionHistory.map(expr => `
         <div class="flex justify-between items-center p-2 bg-white dark:bg-[#252526] hover:bg-blue-50 dark:hover:bg-[#2a2d2e] rounded-md cursor-pointer transition-colors border border-gray-100 dark:border-[#3c3c3c] shadow-sm mb-1"
-             onclick="loadFromHistory('${expr.replace(/'/g, "\\'")}')" title="${t('clickToRecalculate')}"
+             onclick="loadFromHistory('${expr.replace(/'/g, "\\'")}')" title="${t('clickToRecalculate')}">
             <span class="font-bold text-blue-600 dark:text-[#9cdcfe] truncate max-w-[85%]">${expr}</span>
             <i class="fas fa-play text-xs text-gray-400 hover:text-blue-500 transition-colors"></i>
         </div>
@@ -1491,6 +1417,11 @@ function loadFromHistory(expr) {
 
 function clearHistory() {
     expressionHistory = [];
+    try {
+        localStorage.removeItem('syslogic_history');
+    } catch (e) {
+        console.warn("Bloqueio ao limpar memória.");
+    }
     renderHistory();
 }
 
@@ -1508,3 +1439,6 @@ function toggleHistory() {
         chevron.classList.add('rotate-180');
     }
 }
+
+// 4. GATILHO AUTOMÁTICO: Força o histórico a aparecer sozinho assim que a página terminar de montar
+window.addEventListener('load', renderHistory);

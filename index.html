@@ -4,7 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' stroke='%23ffffff' stroke-width='8' stroke-linecap='round' stroke-linejoin='round' fill='none'><rect x='20' y='20' width='60' height='60' rx='8'/><rect x='35' y='35' width='30' height='30' rx='2'/><path d='M29 8v12M43 8v12M57 8v12M71 8v12M29 92v-12M43 92v-12M57 92v-12M71 92v-12M8 29h12M8 43h12M8 57h12M8 71h12M92 29h-12M92 43h-12M92 57h-12M92 71h-12'/></svg>">
+    <link rel="icon" type="image/svg+xml"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' stroke='%23ffffff' stroke-width='8' stroke-linecap='round' stroke-linejoin='round' fill='none'><rect x='20' y='20' width='60' height='60' rx='8'/><rect x='35' y='35' width='30' height='30' rx='2'/><path d='M29 8v12M43 8v12M57 8v12M71 8v12M29 92v-12M43 92v-12M57 92v-12M71 92v-12M8 29h12M8 43h12M8 57h12M8 71h12M92 29h-12M92 43h-12M92 57h-12M92 71h-12'/></svg>">
 
     <script src="https://cdn.tailwindcss.com"></script>
 
@@ -196,9 +197,9 @@
         <div class="container mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
             <div>
                 <h1 class="text-3xl font-bold flex items-center gap-2">
-        <i class="fas fa-microchip"></i>
-        <span id="appTitle">SysLogic - Calculadora de Lógica Digital</span>
-    </h1>
+                    <i class="fas fa-microchip"></i>
+                    <span id="appTitle">SysLogic - Calculadora de Lógica Digital</span>
+                </h1>
                 <p id="appSubtitle" class="mt-2 text-blue-100">Tabela Verdade, Mapa de Karnaugh e Simplificação.</p>
             </div>
 
@@ -312,13 +313,13 @@
                     </h2>
                     <div class="flex gap-4 mb-4">
                         <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="varCount"
-                                value="2" onchange="updateVarCount(2)"> 2 vars</label>
+                                value="2" onchange="updateVarCount(2)"> 2 </label>
                         <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="varCount"
-                                value="3" onchange="updateVarCount(3)" checked> 3 vars</label>
+                                value="3" onchange="updateVarCount(3)" checked> 3 </label>
                         <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="varCount"
-                                value="4" onchange="updateVarCount(4)"> 4 vars</label>
+                                value="4" onchange="updateVarCount(4)"> 4 </label>
                         <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="varCount"
-                                value="5" onchange="updateVarCount(5)"> 5 vars</label>
+                                value="5" onchange="updateVarCount(5)"> 5 </label>
                     </div>
                     <div id="detectedVars" class="mt-4 p-3 bg-blue-50 rounded-lg transition-colors duration-200">
                         <p id="detectedText" class="text-blue-700 font-medium">Variáveis detectadas:</p>
@@ -420,6 +421,10 @@
                         <div class="overflow-x-auto mb-auto w-full">
                             <table class="w-full text-center border-collapse" id="truthTable"></table>
                         </div>
+                        <div
+                            class="watermark-logo hidden mt-6 text-center text-[10px] text-gray-400 dark:text-gray-500 font-mono uppercase tracking-widest opacity-60">
+                            SysLogic.com
+                        </div>
                     </section>
 
                     <section id="kmapCard"
@@ -448,6 +453,10 @@
                                 Expressão Simplificada:</h2>
                             <div id="simplifiedExpression"
                                 class="text-2xl font-mono text-blue-600 dark:text-[#9cdcfe] font-bold break-all"></div>
+                        </div>
+                        <div
+                            class="watermark-logo hidden mt-6 text-center text-[10px] text-gray-400 dark:text-gray-500 font-mono uppercase tracking-widest opacity-60">
+                            SysLogic.com
                         </div>
                     </section>
                 </div>
@@ -505,6 +514,10 @@
                             <div id="sopExpression"
                                 class="text-xl font-mono text-green-600 dark:text-green-400 font-bold break-all"></div>
                         </div>
+                        <div
+                            class="watermark-logo hidden mt-6 text-center text-[10px] text-gray-400 dark:text-gray-500 font-mono uppercase tracking-widest opacity-60">
+                            SysLogic.com
+                        </div>
                     </section>
 
                     <section id="posCard"
@@ -531,6 +544,10 @@
                                 Expressão Padrão:</h2>
                             <div id="posExpression"
                                 class="text-xl font-mono text-red-600 dark:text-red-400 font-bold break-all"></div>
+                        </div>
+                        <div
+                            class="watermark-logo hidden mt-6 text-center text-[10px] text-gray-400 dark:text-gray-500 font-mono uppercase tracking-widest opacity-60">
+                            SysLogic.com
                         </div>
                     </section>
 
