@@ -4,10 +4,10 @@ let currentOutputs = [];
 let currentExpression = "";
 let currentVariables = [];
 
-// ==================== TRADUÇÕES ====================
+// ==================== TRADUÇÕES COM BRANDING FIXO ====================
 const translations = {
     pt: {
-        appTitle: "Calculadora de Lógica Digital",
+        appTitle: "SysLogic - Calculadora de Lógica Digital",
         appSubtitle: "Tabela Verdade, Mapa de Karnaugh e Simplificação",
         sectionInput: "Entrada de Função",
         sectionVars: "Variáveis",
@@ -41,10 +41,18 @@ const translations = {
         pdfDescription: "Salve um documento PDF com todas as tabelas, mapas e expressões simplificadas.",
         sopTitle: "Soma de Produtos (SOP)",
         posTitle: "Produto de Somas (POS)",
-        standardExpression: "Expressão Padrão:"
+        standardExpression: "Expressão Padrão:",
+        clickToRecalculate: "Clique para calcular novamente",
+        pdf5VarsLimit: "A exportação PDF não está disponível para funções com 5 variáveis.",
+        essentialPrimeImplicants: "Implicantes Primos Essenciais",
+        output: "S",
+        language: "Idioma:",
+        booleanExpression: "Expressão Booleana",
+        or: "ou",
+        aboutUs: "Sobre nós: Desenvolvido por Bergson Sales, Pedro Henrique, Pedro Conceição, Yuri Alexandre e Yuri Cortes, estudantes da instituição FPB - Faculdade Internacional da Paraíba 2026©"
     },
     en: {
-        appTitle: "Digital Logic Calculator",
+        appTitle: "SysLogic - Digital Logic Calculator",
         appSubtitle: "Truth Table, Karnaugh Map and Simplification",
         sectionInput: "Function Input",
         sectionVars: "Variables",
@@ -78,7 +86,15 @@ const translations = {
         pdfDescription: "Save a PDF document with all tables, maps, and simplified expressions.",
         sopTitle: "Sum of Products (SOP)",
         posTitle: "Product of Sums (POS)",
-        standardExpression: "Standard Expression:"
+        standardExpression: "Standard Expression:",
+        clickToRecalculate: "Click to recalculate",
+        pdf5VarsLimit: "PDF export is not available for functions with 5 variables.",
+        essentialPrimeImplicants: "Essential Prime Implicants",
+        output: "Out",
+        language: "Language:",
+        booleanExpression: "Boolean Expression",
+        or: "or",
+        aboutUs: "About us: Developed by Bergson Sales, Pedro Henrique, Pedro Conceição, Yuri Alexandre, and Yuri Cortes, students at the institution FPB - Faculdade Internacional da Paraíba 2026©"
     }
 };
 
@@ -138,12 +154,28 @@ function ensureVariables() {
 
 function updateVarCount(count) {
     currentVarCount = parseInt(count);
+    ensureVariables(); // Arruma as letras sem duplicar
+
     const totalRows = Math.pow(2, currentVarCount);
     currentOutputs = new Array(totalRows).fill(0);
 
     const input = document.getElementById('expressionInput').value.trim();
-    if (input) calculateFromExpression();
-    else renderAll();
+
+    if (input) {
+        // Apenas reavalia a tabela COM A NOVA QUANTIDADE, sem resetar as variáveis detectadas!
+        for (let i = 0; i < totalRows; i++) {
+            const binary = i.toString(2).padStart(currentVarCount, '0').split('').map(Number);
+            const result = evaluateExpression(input, binary);
+            if (result !== null) currentOutputs[i] = result;
+        }
+    }
+
+    // Atualiza a interface (rádios) para garantir que o visual acompanha o estado
+    document.querySelectorAll('input[name="varCount"]').forEach(rb => {
+        if (parseInt(rb.value) === currentVarCount) rb.checked = true;
+    });
+
+    renderAll();
 }
 
 function translatePage() {
@@ -151,6 +183,13 @@ function translatePage() {
 
     document.getElementById("appTitle").textContent = lang.appTitle;
     document.getElementById("appSubtitle").textContent = lang.appSubtitle;
+    // Tradução do Rótulo de Idioma
+    const langLabelEl = document.getElementById("languageLabel");
+    if (langLabelEl) langLabelEl.textContent = lang.language;
+
+    // Tradução do Rótulo da Expressão Booleana
+    const exprLabelEl = document.getElementById("labelExpression");
+    if (exprLabelEl) exprLabelEl.textContent = lang.booleanExpression;
     document.getElementById("sectionInput").innerHTML = `<i class="fas fa-keyboard text-blue-500"></i> ${lang.sectionInput}`;
     document.getElementById("sectionVars").innerHTML = `<i class="fas fa-list-ol text-blue-500"></i> ${lang.sectionVars}`;
 
@@ -206,11 +245,22 @@ function translatePage() {
     }
 
     // Translate operators section
+    // Tradução da seção de Operadores e os "ou"
     const operatorsDiv = document.querySelector('.mt-3.p-3.bg-gray-50');
     if (operatorsDiv) {
         const title = operatorsDiv.querySelector('.text-xs.font-bold');
         if (title) {
             title.textContent = currentLang === 'en' ? 'Operators:' : 'Operadores:';
+        }
+
+        const grid = operatorsDiv.querySelector('.grid');
+        if (grid) {
+            grid.innerHTML = `
+                <span><b>.</b> ${lang.or} <b>&amp;</b> : AND</span>
+                <span><b>+</b> ${lang.or} <b>|</b> : OR</span>
+                <span><b>~</b> ${lang.or} <b>!</b> : NOT</span>
+                <span><b>⊕</b> ${lang.or} <b>^</b> : XOR</span>
+            `;
         }
     }
 
@@ -223,6 +273,8 @@ function translatePage() {
     document.getElementById("simplifiedTitle").textContent = lang.simplifiedTitle;
     document.getElementById("stepsTitle").textContent = lang.stepsTitle;
     document.getElementById("footerText").textContent = lang.footerText;
+    const aboutUsEl = document.getElementById("aboutUsText");
+    if (aboutUsEl) aboutUsEl.textContent = lang.aboutUs;
 
     const btnCalc = document.getElementById("btnCalculate");
     const btnClr = document.getElementById("btnClear");
@@ -247,6 +299,7 @@ function translatePage() {
     }
 
     renderAll();
+    if (typeof renderHistory === 'function') renderHistory();
 }
 
 function changeLanguage() {
@@ -256,19 +309,15 @@ function changeLanguage() {
 
 // ==================== DETECÇÃO DE VARIÁVEIS ====================
 function extractVariables(expr) {
-    const varSet = new Set();
-    const matches = expr.match(/[a-zA-Z]/g) || [];
+    const reserved = ['AND', 'OR', 'NOT', 'XOR', 'OU'];
 
-    matches.forEach(letter => {
-        const upper = letter.toUpperCase();
-        const forbidden = ['AND', 'OR', 'NOT', 'XOR', 'V', 'E', 'OU'];
+    const tokens = expr.match(/[A-Za-z]+/g) || [];
 
-        if (!forbidden.includes(upper)) {
-            varSet.add(upper);
-        }
-    });
+    const vars = tokens.filter(token =>
+        !reserved.includes(token.toUpperCase())
+    );
 
-    return Array.from(varSet).sort();
+    return [...new Set(vars.map(v => v.toUpperCase()))].sort();
 }
 
 // ==================== AVALIAÇÃO DE EXPRESSÃO ====================
@@ -276,33 +325,43 @@ function evaluateExpression(expr, variables) {
     const errorDiv = document.getElementById('expressionError');
     errorDiv.classList.add('hidden');
 
-    let standardized = expr
-        .replace(/\s+/g, '')
+    // 1. Limpa espaços, padroniza tudo para maiúsculo e arruma os parênteses
+    let standardized = expr.toUpperCase().replace(/\s+/g, '')
         .replace(/\[/g, '(').replace(/\]/g, ')')
-        .replace(/\{/g, '(').replace(/\}/g, ')')
-        .replace(/<->/g, '===')
-        .replace(/->/g, '<=')
-        .replace(/v/g, '||').replace(/V/g, '||')
-        .replace(/ou/g, '||').replace(/OU/g, '||')
-        .replace(/\^/g, '&&')
-        .replace(/\./g, '&&')
-        .replace(/\+/g, '||')
-        .replace(/~/g, '!')
-        .replace(/⊕/g, '^')
-        .replace(/&/g, '&&')
-        .replace(/\|/g, '||')
-        .replace(/!/g, '!');
+        .replace(/\{/g, '(').replace(/\}/g, ')');
 
+    // 2. Reduz operadores duplicados para evitar o "efeito bola de neve"
+    standardized = standardized
+        .replace(/&&/g, '&')
+        .replace(/\|\|/g, '|');
+
+    // 3. Traduz os símbolos da sua UI para uma base segura de 1 caractere
+    standardized = standardized
+        .replace(/\./g, '&')
+        .replace(/\+/g, '|')
+        .replace(/⊕/g, '!=')
+        .replace(/\^/g, '!=')
+        .replace(/~/g, '!');
+
+    // 4. Expande para a sintaxe real do JavaScript de forma segura
+    standardized = standardized
+        .replace(/&/g, '&&')
+        .replace(/\|/g, '||');
+
+    // 5. Substitui as variáveis (A, B, C...) pelo valor binário da tabela (0 ou 1)
     currentVariables.forEach((varName, index) => {
         const val = variables[index] !== undefined ? variables[index] : 0;
-        const regex = new RegExp(`(?<![a-zA-Z])${varName}(?![a-zA-Z])`, 'gi');
+        // O limite de palavra (\b) garante segurança em qualquer celular/navegador
+        const regex = new RegExp('\\b' + varName + '\\b', 'gi');
         standardized = standardized.replace(regex, val);
     });
 
     try {
+        // Tenta calcular a expressão final (ex: "0 || 1")
         const result = new Function(`return ${standardized}`)();
         return result ? 1 : 0;
     } catch (e) {
+        // Se o usuário digitou algo estruturalmente quebrado (ex: A ++ B), cai aqui
         errorDiv.textContent = t('expressionError');
         errorDiv.classList.remove('hidden');
         return null;
@@ -313,13 +372,21 @@ function evaluateExpression(expr, variables) {
 function calculateFromExpression() {
     const input = document.getElementById('expressionInput').value.trim();
     if (!input) return;
-    addToHistory(input);
+
+    // Corrigido um bugzinho de digitação (tinha uma vírgula no final da linha)
+    if (typeof addToHistory === 'function') addToHistory(input);
 
     currentExpression = input;
-    currentVariables = extractVariables(input);
+    let detectedVars = extractVariables(input);
 
-    if (currentVariables.length === 0) currentVariables = ['A', 'B', 'C'];
-    currentVarCount = Math.min(currentVariables.length, 6);
+    if (detectedVars.length === 0) detectedVars = ['A', 'B', 'C', 'D', 'E'];
+
+    // CORREÇÃO: O número de variáveis agora obedece ESTRITAMENTE o que você digitou!
+    // (Limitado entre 2 e 5 para encaixar no Mapa de Karnaugh).
+    currentVarCount = Math.max(2, Math.min(detectedVars.length, 5));
+
+    currentVariables = detectedVars;
+    ensureVariables(); // Arruma e ordena as letras detectadas
 
     const totalRows = Math.pow(2, currentVarCount);
     currentOutputs = new Array(totalRows).fill(0);
@@ -330,7 +397,7 @@ function calculateFromExpression() {
         if (result !== null) currentOutputs[i] = result;
     }
 
-    // Atualiza rádio buttons visuais de acordo com o detectado
+    // Atualiza o rádio button visualmente para mostrar a quantidade real detectada
     document.querySelectorAll('input[name="varCount"]').forEach(rb => {
         if (parseInt(rb.value) === currentVarCount) rb.checked = true;
     });
@@ -359,7 +426,7 @@ function renderTruthTable() {
         <thead>
             <tr class="bg-gray-100 border-b-2 border-gray-200 transition-colors duration-200">
                 ${varNames.map(v => `<th class="p-2 font-bold">${v}</th>`).join('')}
-                <th class="p-2 font-bold text-blue-600">S</th>
+                <th class="p-2 font-bold text-blue-600">${t('output')}</th>
             </tr>
         </thead>
         <tbody>
@@ -386,7 +453,7 @@ function toggleOutput(index) {
     renderAll();
 }
 
-// ==================== MAPA DE KARNAUGH ====================
+
 // ==================== MAPA DE KARNAUGH ====================
 function renderKMap() {
     const container = document.getElementById('kmapContainer');
@@ -499,93 +566,310 @@ function updateSimplifiedExpression() {
 }
 
 function simplifyWithSteps(minterms, varCount) {
+
     ensureVariables();
+
     const varNames = currentVariables.slice(0, varCount);
     let steps = [];
 
-    steps.push(`${t('mintermsIdentified')}: ${minterms.join(', ')}`);
+    steps.push(`${t('essentialPrimeImplicants')}: ${finalImplicants.map(pi => pi.bin).join(', ')}`);
+
+    // ============================
+    // GERAÇÃO DOS PRIME IMPLICANTS
+    // ============================
 
     let groups = {};
+
     minterms.forEach(m => {
+
         const bin = m.toString(2).padStart(varCount, '0');
         const ones = (bin.match(/1/g) || []).length;
+
         if (!groups[ones]) groups[ones] = [];
-        groups[ones].push({ bin, combined: false, source: [m] });
+
+        groups[ones].push({
+            bin,
+            combined: false,
+            source: [m]
+        });
+
     });
 
-    let primeImplicants = [];
     let currentGroups = groups;
+    let primeImplicants = [];
     let stage = 1;
 
     while (Object.keys(currentGroups).length > 0) {
+
         let nextGroups = {};
         let foundAnyMatch = false;
-        let matchesInThisStage = 0;
+        let combinations = 0;
 
-        const keys = Object.keys(currentGroups).sort((a, b) => a - b);
+        const keys = Object.keys(currentGroups)
+            .map(Number)
+            .sort((a, b) => a - b);
 
         for (let i = 0; i < keys.length - 1; i++) {
-            const group1 = currentGroups[keys[i]];
-            const group2 = currentGroups[keys[i + 1]];
 
-            group1.forEach(m1 => {
-                group2.forEach(m2 => {
-                    let diffIndex = -1, diffCount = 0;
+            const groupA = currentGroups[keys[i]];
+            const groupB = currentGroups[keys[i + 1]];
+
+            groupA.forEach(a => {
+
+                groupB.forEach(b => {
+
+                    let diffCount = 0;
+                    let diffIndex = -1;
+
                     for (let j = 0; j < varCount; j++) {
-                        if (m1.bin[j] !== m2.bin[j]) {
+
+                        if (a.bin[j] !== b.bin[j]) {
                             diffCount++;
                             diffIndex = j;
                         }
-                    }
-                    if (diffCount === 1) {
-                        foundAnyMatch = true;
-                        m1.combined = m2.combined = true;
-                        const newBin = m1.bin.substring(0, diffIndex) + '-' + m1.bin.substring(diffIndex + 1);
-                        const ones = (newBin.replace(/-/g, '').match(/1/g) || []).length;
 
-                        if (!nextGroups[ones]) nextGroups[ones] = [];
-                        if (!nextGroups[ones].some(g => g.bin === newBin)) {
+                    }
+
+                    if (diffCount === 1) {
+
+                        foundAnyMatch = true;
+
+                        a.combined = true;
+                        b.combined = true;
+
+                        const newBin =
+                            a.bin.substring(0, diffIndex) +
+                            '-' +
+                            a.bin.substring(diffIndex + 1);
+
+                        const ones =
+                            (newBin.replace(/-/g, '').match(/1/g) || []).length;
+
+                        if (!nextGroups[ones]) {
+                            nextGroups[ones] = [];
+                        }
+
+                        if (!nextGroups[ones].some(x => x.bin === newBin)) {
+
                             nextGroups[ones].push({
                                 bin: newBin,
                                 combined: false,
-                                source: [...new Set([...m1.source, ...m2.source])].sort((a, b) => a - b)
+                                source: [...new Set([
+                                    ...a.source,
+                                    ...b.source
+                                ])]
                             });
-                            matchesInThisStage++;
+
+                            combinations++;
+
                         }
+
                     }
+
                 });
+
             });
+
         }
 
-        Object.values(currentGroups).flat().forEach(m => {
-            if (!m.combined && !primeImplicants.some(p => p.bin === m.bin)) {
-                primeImplicants.push(m);
-            }
-        });
+        Object.values(currentGroups)
+            .flat()
+            .forEach(item => {
+
+                if (
+                    !item.combined &&
+                    !primeImplicants.some(pi => pi.bin === item.bin)
+                ) {
+                    primeImplicants.push(item);
+                }
+
+            });
 
         if (foundAnyMatch) {
-            steps.push(`${t('stage')} ${stage}: ${t('combinedDoubles')} ${matchesInThisStage} ${t('doubles')}.`);
+
+            steps.push(
+                `${t('stage')} ${stage}: ${t('combinedDoubles')} ${combinations} ${t('doubles')}.`
+            );
+
             stage++;
         }
+
         if (!foundAnyMatch) break;
+
         currentGroups = nextGroups;
+
     }
 
-    steps.push(`${t('primeImplicantsFound')}: ${primeImplicants.map(pi => pi.bin).join(', ')}`);
+    steps.push(
+        `${t('primeImplicantsFound')}: ${primeImplicants.map(pi => pi.bin).join(', ')}`
+    );
 
-    const terms = primeImplicants.map(pi => {
-        let parts = [];
-        for (let i = 0; i < varCount; i++) {
-            if (pi.bin[i] === '1') parts.push(varNames[i]);
-            else if (pi.bin[i] === '0') parts.push('~' + varNames[i]);
+    // ============================
+    // TABELA DE COBERTURA
+    // ============================
+
+    function coversMinterm(implicant, minterm) {
+
+        const binary =
+            minterm.toString(2).padStart(varCount, '0');
+
+        for (let i = 0; i < implicant.length; i++) {
+
+            if (
+                implicant[i] !== '-' &&
+                implicant[i] !== binary[i]
+            ) {
+                return false;
+            }
+
         }
-        return parts.length ? parts.join(' . ') : "1";
+
+        return true;
+
+    }
+
+    const coverageTable = {};
+
+    minterms.forEach(minterm => {
+
+        coverageTable[minterm] = [];
+
+        primeImplicants.forEach((pi, index) => {
+
+            if (coversMinterm(pi.bin, minterm)) {
+                coverageTable[minterm].push(index);
+            }
+
+        });
+
+    });
+
+    // ============================
+    // ESSENTIAL PRIME IMPLICANTS
+    // ============================
+
+    const selected = new Set();
+
+    Object.values(coverageTable).forEach(indices => {
+
+        if (indices.length === 1) {
+            selected.add(indices[0]);
+        }
+
+    });
+
+    // ============================
+    // COBERTURA DOS RESTANTES
+    // ============================
+
+    const coveredMinterms = new Set();
+
+    selected.forEach(index => {
+
+        minterms.forEach(m => {
+
+            if (
+                coversMinterm(
+                    primeImplicants[index].bin,
+                    m
+                )
+            ) {
+                coveredMinterms.add(m);
+            }
+
+        });
+
+    });
+
+    while (coveredMinterms.size < minterms.length) {
+
+        let bestPI = -1;
+        let bestCoverage = -1;
+
+        primeImplicants.forEach((pi, index) => {
+
+            if (selected.has(index)) return;
+
+            let count = 0;
+
+            minterms.forEach(m => {
+
+                if (
+                    !coveredMinterms.has(m) &&
+                    coversMinterm(pi.bin, m)
+                ) {
+                    count++;
+                }
+
+            });
+
+            if (count > bestCoverage) {
+
+                bestCoverage = count;
+                bestPI = index;
+
+            }
+
+        });
+
+        if (bestPI === -1) break;
+
+        selected.add(bestPI);
+
+        minterms.forEach(m => {
+
+            if (
+                coversMinterm(
+                    primeImplicants[bestPI].bin,
+                    m
+                )
+            ) {
+                coveredMinterms.add(m);
+            }
+
+        });
+
+    }
+
+    // ============================
+    // EXPRESSÃO FINAL
+    // ============================
+
+    const finalImplicants =
+        [...selected].map(i => primeImplicants[i]);
+
+    steps.push(
+        `Essential Prime Implicants: ${finalImplicants.map(pi => pi.bin).join(', ')
+        }`
+    );
+
+    const terms = finalImplicants.map(pi => {
+
+        const parts = [];
+
+        for (let i = 0; i < varCount; i++) {
+
+            if (pi.bin[i] === '1') {
+                parts.push(varNames[i]);
+            }
+
+            else if (pi.bin[i] === '0') {
+                parts.push('~' + varNames[i]);
+            }
+
+        }
+
+        return parts.length
+            ? parts.join(' . ')
+            : '1';
+
     });
 
     return {
-        expression: terms.join(' + ') || "0",
-        steps: steps
+        expression: terms.join(' + ') || '0',
+        steps
     };
+
 }
 
 // ==================== UTILITIES ====================
@@ -662,29 +946,46 @@ function downloadPDF() {
 
     // 3. O SEGREDO: Aguarda 100ms para o navegador processar o HTML antes de gerar o PDF
     setTimeout(() => {
-        html2pdf().set(opt).from(element).save().then(() => {
-            // Torna a colocar o botão no ecrã
-            if (btn) btn.style.display = 'flex';
+        const sopCard = document.getElementById('sopCard');
+        const posCard = document.getElementById('posCard');
 
-            // Oculta a marca de água novamente
-            if (watermark) {
-                watermark.classList.add('hidden');
-                watermark.style.removeProperty('display');
-            }
-        });
+        if (currentVariables.length === 4) {
+
+            sopCard.classList.add('pdf-compact');
+            posCard.classList.add('pdf-compact');
+
+        }
+
+        html2pdf()
+            .set(opt)
+            .from(element)
+            .save()
+            .then(() => {
+
+                sopCard.classList.remove('pdf-compact');
+                posCard.classList.remove('pdf-compact');
+
+                const pdfCard = document.getElementById('pdfCard');
+                const btnPdf = document.getElementById('btnFullReport');
+
+                // Oculta a marca de água novamente
+                if (watermark) {
+                    watermark.classList.add('hidden');
+                    watermark.style.removeProperty('display');
+                }
+            });
     }, 100); // 100 milissegundos são suficientes para o motor gráfico atualizar
 }
 
 // ==================== EXPORTAÇÃO PARA PDF (TABELA VERDADE) ====================
 function downloadTruthTablePDF() {
+
     const element = document.getElementById('truthTableCard');
-    const btn = element.querySelector('button[onclick="downloadTruthTablePDF()"]');
+    const btn = document.getElementById('truthTableDownloadBtn');
     const watermark = document.getElementById('watermarkTT');
 
-    // 1. Esconde o botão para não sair no PDF
     if (btn) btn.style.display = 'none';
 
-    // 2. Revela a marca de água 
     if (watermark) {
         watermark.classList.remove('hidden');
         watermark.style.setProperty('display', 'block', 'important');
@@ -698,18 +999,21 @@ function downloadTruthTablePDF() {
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
 
-    // 3. Aguarda 100ms para o navegador renderizar a marca-d'água e tira a "foto"
     setTimeout(() => {
-        html2pdf().set(opt).from(element).save().then(() => {
-            // Devolve o botão à tela
-            if (btn) btn.style.display = 'flex';
+        html2pdf()
+            .set(opt)
+            .from(element)
+            .save()
+            .then(() => {
 
-            // Oculta a marca de água novamente
-            if (watermark) {
-                watermark.classList.add('hidden');
-                watermark.style.removeProperty('display');
-            }
-        });
+                if (btn) btn.style.display = 'flex';
+
+                if (watermark) {
+                    watermark.classList.add('hidden');
+                    watermark.style.removeProperty('display');
+                }
+
+            });
     }, 100);
 }
 
@@ -742,7 +1046,7 @@ function downloadSOPPDF() {
     const tableContainer = element.querySelector('.overflow-x-auto');
 
     // 1. PREPARAR O TERRENO (Remover limites e botões)
-    if (btn) btn.style.display = 'none';
+    if (btn) btn.classList.add('pdf-hidden');
     if (watermark) {
         watermark.classList.remove('hidden');
         watermark.style.setProperty('display', 'block', 'important');
@@ -768,7 +1072,7 @@ function downloadSOPPDF() {
     setTimeout(() => {
         html2pdf().set(opt).from(element).save().then(() => {
             // Devolve o botão e esconde a marca d'água
-            if (btn) btn.style.display = 'flex';
+            if (btn) btn.classList.remove('pdf-hidden');
             if (watermark) {
                 watermark.classList.add('hidden');
                 watermark.style.removeProperty('display');
@@ -944,104 +1248,88 @@ function renderPOS() {
 
 function downloadFullReport() {
 
-    const element = document.getElementById('fullReportArea');
-    const pdfSection = document.querySelector('.md\\:w-64');
+    if (currentVariables.length === 5) {
+        alert(t('pdf5VarsLimit'));
+        return;
+    }
 
-    // ESCONDE O BALÃO COMPLETO
-    if (pdfSection) {
-    pdfSection.style.visibility = 'hidden';
-}
+    sopCard.classList.remove('pdf-compact');
+    posCard.classList.remove('pdf-compact');
+
+    const element = document.getElementById('fullReportArea');
+
+    // ELEMENTOS QUE NÃO DEVEM APARECER
+    const pdfCard = document.getElementById('pdfCard');
+    const btnPdf = document.getElementById('btnFullReport');
+
+    // Esconde antes de gerar
+    if (pdfCard) pdfCard.style.display = 'none';
+    if (btnPdf) btnPdf.style.display = 'none';
 
     const opt = {
         margin: 0.3,
-        filename: 'relatorio-logica.pdf',
-        image: { type: 'jpeg', quality: 1 },
-
+        filename: 'relatorio-logico.pdf',
+        image: {
+            type: 'jpeg',
+            quality: 1
+        },
         html2canvas: {
             scale: 2,
             useCORS: true,
-            backgroundColor: null,
-            scrollX: 0,
             scrollY: 0
         },
-
         jsPDF: {
             unit: 'in',
             format: 'a4',
             orientation: 'portrait'
         },
-
         pagebreak: {
             mode: ['avoid-all', 'css', 'legacy']
         }
     };
 
-    // Cards que vão receber assinatura
-const cards = [
-    document.getElementById('truthTableCard'),
-    document.getElementById('kmapCard'),
-    document.getElementById('sopCard'),
-    document.getElementById('posCard')
-];
-
-// Adiciona assinatura temporária
-cards.forEach(card => {
-
-    const assinatura = document.createElement('div');
-
-    assinatura.className = 'temp-pdf-signature';
-
-    assinatura.innerText = 'Gerado por calculadora digital.com';
-
-    assinatura.style.marginTop = '20px';
-    assinatura.style.paddingTop = '8px';
-    assinatura.style.borderTop = '1px solid #ddd';
-    assinatura.style.textAlign = 'center';
-    assinatura.style.fontSize = '10px';
-    assinatura.style.color = 'rgba(120,120,120,0.45)';
-    assinatura.style.fontStyle = 'italic';
-
-    card.appendChild(assinatura);
-});
-
-    setTimeout(() => {
+    const sopCard = document.getElementById('sopCard');
+    const posCard = document.getElementById('posCard');
 
     html2pdf()
         .set(opt)
         .from(element)
-        .save();
+        .save()
+        .then(() => {
 
-}, 100);
+            // Mostra novamente após gerar
+            if (pdfCard) pdfCard.style.display = '';
+            if (btnPdf) btnPdf.style.display = '';
+
+        })
+        .catch(() => {
 
 
-// Remove assinaturas depois do download iniciar
-setTimeout(() => {
+            if (pdfCard) pdfCard.style.display = '';
+            if (btnPdf) btnPdf.style.display = '';
 
-    document.querySelectorAll('.temp-pdf-signature')
-        .forEach(el => el.remove());
+        })
 
-}, 1000);
+    let originalSopTransform = '';
+    let originalPosTransform = '';
+
+    if (currentVariables.length === 4) {
+
+        originalSopTransform = sopCard.style.transform;
+        originalPosTransform = posCard.style.transform;
+
+        sopCard.style.transform = 'scale(0.85)';
+        posCard.style.transform = 'scale(0.85)';
+
+        sopCard.style.transformOrigin = 'top center';
+        posCard.style.transformOrigin = 'top center';
+
+        sopCard.style.marginBottom = '-80px';
+        posCard.style.marginBottom = '-80px';
+    }
+
 }
 
-// ==================== TECLADO VIRTUAL DE SÍMBOLOS ====================
-function insertSymbol(symbol) {
-    const input = document.getElementById('expressionInput');
-    if (!input) return;
-
-    // Apanha a posição exata onde o cursor do rato está a piscar
-    const start = input.selectionStart;
-    const end = input.selectionEnd;
-    const text = input.value;
-
-    // Corta o texto em dois e insere o símbolo no meio
-    input.value = text.slice(0, start) + symbol + text.slice(end);
-
-    // Empurra o cursor para a frente do símbolo que acabou de ser digitado
-    input.selectionStart = input.selectionEnd = start + symbol.length;
-
-    // Devolve o foco à caixa de texto para a pessoa continuar a escrever
-    input.focus();
-}
 // ==================== TECLADO VIRTUAL DE SÍMBOLOS ====================
 
 function insertSymbol(symbol) {
@@ -1077,4 +1365,146 @@ function backspaceSymbol() {
     }
 
     input.focus();
+}
+
+function downloadSectionPDF(sectionId, filename) {
+
+    const element = document.getElementById(sectionId);
+
+    const buttons = element.querySelectorAll('button');
+
+    buttons.forEach(btn => btn.style.display = 'none');
+
+    // força expansão completa
+    const originalHeight = element.style.height;
+    const originalDisplay = element.style.display;
+
+    element.style.height = 'auto';
+    element.style.display = 'block';
+
+    const wrappers = element.querySelectorAll('.overflow-x-auto');
+
+    wrappers.forEach(w => {
+        w.dataset.originalOverflow = w.style.overflow;
+        w.style.overflow = 'visible';
+    });
+
+    setTimeout(() => {
+
+        html2pdf()
+            .set({
+                margin: 5,
+                filename: filename,
+                image: {
+                    type: 'jpeg',
+                    quality: 1
+                },
+                html2canvas: {
+                    scale: 3,
+                    useCORS: true,
+                    scrollX: 0,
+                    scrollY: 0
+                },
+                jsPDF: {
+                    unit: 'mm',
+                    format: 'a4',
+                    orientation: 'portrait'
+                }
+            })
+            .from(element)
+            .save()
+            .then(() => {
+
+                buttons.forEach(btn => btn.style.display = '');
+
+                element.style.height = originalHeight;
+                element.style.display = originalDisplay;
+
+                wrappers.forEach(w => {
+                    w.style.overflow = w.dataset.originalOverflow || '';
+                });
+
+            });
+
+    }, 500);
+}
+
+// ==================== HISTÓRICO DE EXPRESSÕES ====================
+
+// Variável global para armazenar as expressões (coloque junto com o let currentExpression = ""; lá no topo, ou deixe aqui)
+let expressionHistory = [];
+
+function addToHistory(expr) {
+    if (!expr) return;
+
+    // Procura se a expressão já existe no histórico
+    const existingIndex = expressionHistory.indexOf(expr);
+
+    // Se ela já existir, removemos da posição atual
+    if (existingIndex !== -1) {
+        expressionHistory.splice(existingIndex, 1);
+    }
+
+    // Adicionamos a expressão no topo (início do array)
+    expressionHistory.unshift(expr);
+
+    // Limita o histórico às últimas 10 expressões
+    if (expressionHistory.length > 10) {
+        expressionHistory.pop();
+    }
+
+    renderHistory();
+}
+
+function renderHistory() {
+    const listDiv = document.getElementById('historyList');
+    const countSpan = document.getElementById('historyCount');
+
+    if (!listDiv || !countSpan) return;
+
+    // Atualiza a bolinha com o número de itens
+    countSpan.textContent = expressionHistory.length;
+
+    // Se estiver vazio, mostra a mensagem traduzida
+    if (expressionHistory.length === 0) {
+        listDiv.innerHTML = `<p class="text-gray-500 italic text-center py-2 text-xs">${t('historyEmpty')}</p>`;
+        return;
+    }
+
+    // Renderiza a lista com botão de clique para recarregar
+    listDiv.innerHTML = expressionHistory.map(expr => `
+        <div class="flex justify-between items-center p-2 bg-white dark:bg-[#252526] hover:bg-blue-50 dark:hover:bg-[#2a2d2e] rounded-md cursor-pointer transition-colors border border-gray-100 dark:border-[#3c3c3c] shadow-sm mb-1"
+             onclick="loadFromHistory('${expr.replace(/'/g, "\\'")}')" title="${t('clickToRecalculate')}"
+            <span class="font-bold text-blue-600 dark:text-[#9cdcfe] truncate max-w-[85%]">${expr}</span>
+            <i class="fas fa-play text-xs text-gray-400 hover:text-blue-500 transition-colors"></i>
+        </div>
+    `).join('');
+}
+
+function loadFromHistory(expr) {
+    const input = document.getElementById('expressionInput');
+    if (input) {
+        input.value = expr;
+        calculateFromExpression();
+    }
+}
+
+function clearHistory() {
+    expressionHistory = [];
+    renderHistory();
+}
+
+function toggleHistory() {
+    const content = document.getElementById('historyContent');
+    const chevron = document.getElementById('historyChevron');
+
+    if (!content || !chevron) return;
+
+    content.classList.toggle('hidden');
+
+    if (content.classList.contains('hidden')) {
+        chevron.classList.remove('rotate-180');
+    } else {
+        chevron.classList.add('rotate-180');
+    }
 }
