@@ -20,11 +20,3 @@ Este projeto foi construído no modelo *Vanilla* (sem frameworks JavaScript comp
 * **JavaScript (Vanilla):** Lógica de cálculo, algoritmo de Quine-McCluskey e manipulação do DOM.
 * **Tailwind CSS (via CDN):** Estilização rápida, moderna e responsiva.
 * **FontAwesome:** Ícones da interface (UI/UX).
-
-## 🚀 Como Executar
-
-O projeto não requer instalação de dependências ou servidores locais.
-
-1. Faça o clone deste repositório:
-```bash
-   git clone [https://github.com/SEU-USUARIO/NOME-DO-REPOSITORIO.git](https://github.com/SEU-USUARIO/NOME-DO-REPOSITORIO.git)
