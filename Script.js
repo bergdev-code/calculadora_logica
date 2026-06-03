@@ -49,7 +49,9 @@ const translations = {
         language: "Idioma:",
         booleanExpression: "Expressão Booleana",
         or: "ou",
-        aboutUs: "Sobre nós: Desenvolvido por Bergson Sales, Pedro Henrique, Pedro Conceição, Yuri Alexandre e Yuri Cortes, estudantes da instituição FPB - Faculdade Internacional da Paraíba 2026©"
+        aboutUs: "Sobre nós: Desenvolvido por Bergson Sales, Pedro Henrique, Pedro Conceição, Yuri Alexandre e Yuri Cortes, estudantes da instituição FPB - Faculdade Internacional da Paraíba 2026©",
+        constantSignal: "Sinal constante",
+        noGates: "Não requer portas lógicas."
     },
     en: {
         appTitle: "SysLogic - Digital Logic Calculator",
@@ -94,7 +96,9 @@ const translations = {
         language: "Language:",
         booleanExpression: "Boolean Expression",
         or: "or",
-        aboutUs: "About us: Developed by Bergson Sales, Pedro Henrique, Pedro Conceição, Yuri Alexandre, and Yuri Cortes, students at the institution FPB - Faculdade Internacional da Paraíba 2026©"
+        aboutUs: "About us: Developed by Bergson Sales, Pedro Henrique, Pedro Conceição, Yuri Alexandre, and Yuri Cortes, students at the institution FPB - Faculdade Internacional da Paraíba 2026©",
+        constantSignal: "Constant signal",
+        noGates: "No logic gates required.",
     }
 };
 
@@ -308,6 +312,10 @@ function translatePage() {
 
     renderAll();
     if (typeof renderHistory === 'function') renderHistory();
+
+    const diagramTitleEl = document.getElementById("diagramTitleText");
+    if (diagramTitleEl) diagramTitleEl.textContent = lang.logicDiagram || "Logic Diagram";
+
 }
 
 function changeLanguage() {
@@ -423,6 +431,7 @@ function renderAll() {
     updateSimplifiedExpression();
     renderSOP();
     renderPOS();
+    renderLogicDiagram();
 }
 
 function renderTruthTable() {
@@ -1145,6 +1154,7 @@ function renderPOS() {
     exprDiv.innerHTML = hasMaxterms ? terms.join(' . ') : '1';
 }
 
+
 // ==================== EXPORTAÇÃO PARA PDF (RELATÓRIO COMPLETO) ====================
 function downloadFullReport() {
     if (currentVarCount >= 5) {
@@ -1157,47 +1167,77 @@ function downloadFullReport() {
     const btnPdf = document.getElementById('btnFullReport');
     const sopCard = document.getElementById('sopCard');
     const posCard = document.getElementById('posCard');
-    
+    const diagramCard = document.getElementById('diagramCard');
+    const diagramContainer = document.getElementById('diagramContainer');
+
     const watermarks = element.querySelectorAll('.watermark-logo');
     const innerButtons = element.querySelectorAll('button');
-
     const sopPosContainer = sopCard ? sopCard.parentElement : null;
 
     if (pdfCard) pdfCard.style.display = 'none';
     if (btnPdf) btnPdf.style.display = 'none';
-    
     innerButtons.forEach(btn => btn.style.display = 'none');
     watermarks.forEach(w => w.classList.remove('hidden'));
 
-    // A MÁGICA: Força a quebra de página para 3 OU 4 variáveis
+    const originalWidth = element.style.width;
+    const originalMaxWidth = element.style.maxWidth;
+    element.style.width = '700px';
+    element.style.maxWidth = '700px';
+
+    // Quebra de página para SOP e POS: Continua ativa apenas para 3 e 4 variáveis
     if (currentVarCount >= 3 && sopPosContainer) {
         sopPosContainer.style.pageBreakBefore = 'always';
         sopPosContainer.style.breakBefore = 'page';
-        sopPosContainer.style.pageBreakInside = 'avoid';
-        sopPosContainer.style.breakInside = 'avoid';
+    }
+
+    // A MÁGICA ATUALIZADA: O diagrama agora SEMPRE ganha uma página nova
+    // (Com 2 vars: vai para a pág 2 | Com 3 ou 4 vars: vai para a pág 3 de forma limpa)
+    if (diagramCard) {
+        diagramCard.style.pageBreakBefore = 'always';
+        diagramCard.style.breakBefore = 'page';
+        diagramCard.style.pageBreakInside = 'avoid';
+        diagramCard.style.breakInside = 'avoid';
     }
 
     const tableCells = element.querySelectorAll('td, th');
-    let originalPaddings = [];
-    let originalFonts = [];
-    
-    // A compactação de tamanho continua APENAS para 4 variáveis (para caber na largura)
+    let originalStyles = [];
     if (currentVarCount === 4) {
         tableCells.forEach((cell, index) => {
-            originalPaddings[index] = cell.style.padding;
-            originalFonts[index] = cell.style.fontSize;
+            originalStyles[index] = { padding: cell.style.padding, fontSize: cell.style.fontSize };
             cell.style.padding = '4px';
             cell.style.fontSize = '12px';
         });
     }
 
+    // Sua escala perfeita de 600px centralizada no balão
+    const svgElement = diagramCard ? diagramCard.querySelector('svg') : null;
+    let originalSvgClass = '';
+
+    if (svgElement) {
+        originalSvgClass = svgElement.getAttribute('class') || '';
+        svgElement.setAttribute('class', originalSvgClass.replace('w-full', ''));
+
+        const viewBox = svgElement.getAttribute('viewBox').split(' ');
+        const vbWidth = parseFloat(viewBox[2]);
+        const vbHeight = parseFloat(viewBox[3]);
+
+        const targetWidth = 600; // Seus 600px ideais
+        const targetHeight = (vbHeight / vbWidth) * targetWidth;
+
+        svgElement.setAttribute('width', targetWidth);
+        svgElement.setAttribute('height', targetHeight);
+
+        svgElement.style.display = 'block';
+        svgElement.style.margin = '0 auto';
+    }
+
     const opt = {
-        margin: 0.3,
+        margin: 10,
         filename: 'relatorio-logico.pdf',
         image: { type: 'jpeg', quality: 1 },
         html2canvas: { scale: 2, useCORS: true, scrollY: 0 },
-        jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' },
-        pagebreak: { mode: ['css', 'legacy'] } 
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak: { mode: ['css', 'legacy'] }
     };
 
     setTimeout(() => {
@@ -1219,20 +1259,36 @@ function downloadFullReport() {
             innerButtons.forEach(btn => btn.style.display = '');
             watermarks.forEach(w => w.classList.add('hidden'));
 
-            // Remove as regras de quebra de página se foram aplicadas (3 ou 4 vars)
+            element.style.width = originalWidth;
+            element.style.maxWidth = originalMaxWidth;
+
             if (currentVarCount >= 3 && sopPosContainer) {
                 sopPosContainer.style.pageBreakBefore = '';
                 sopPosContainer.style.breakBefore = '';
-                sopPosContainer.style.pageBreakInside = '';
-                sopPosContainer.style.breakInside = '';
             }
 
-            // Restaura o tamanho das células (apenas 4 vars)
+            if (diagramCard) {
+                diagramCard.style.pageBreakBefore = '';
+                diagramCard.style.breakBefore = '';
+                diagramCard.style.pageBreakInside = '';
+                diagramCard.style.breakInside = '';
+            }
+
             if (currentVarCount === 4) {
                 tableCells.forEach((cell, index) => {
-                    cell.style.padding = originalPaddings[index] || '';
-                    cell.style.fontSize = originalFonts[index] || '';
+                    if (originalStyles[index]) {
+                        cell.style.padding = originalStyles[index].padding;
+                        cell.style.fontSize = originalStyles[index].fontSize;
+                    }
                 });
+            }
+
+            if (svgElement) {
+                svgElement.setAttribute('class', originalSvgClass);
+                svgElement.removeAttribute('width');
+                svgElement.removeAttribute('height');
+                svgElement.style.display = '';
+                svgElement.style.margin = '';
             }
         }
     }, 100);
@@ -1276,9 +1332,7 @@ function backspaceSymbol() {
 }
 
 // ==================== EXPORTAÇÃO PARA PDF (SEÇÕES INDIVIDUAIS) ====================
-// ==================== EXPORTAÇÃO PARA PDF (SEÇÕES INDIVIDUAIS) ====================
 function downloadSectionPDF(sectionId, filename) {
-    // 1. TRAVA ABSOLUTA: Bloqueia o download individual se houver 5 variáveis
     if (currentVarCount >= 5) {
         alert(t('pdf5VarsLimit') || "A exportação PDF não está disponível para funções com 5 variáveis.");
         return;
@@ -1290,21 +1344,25 @@ function downloadSectionPDF(sectionId, filename) {
     const buttons = element.querySelectorAll('button');
     const watermark = element.querySelector('.watermark-logo');
 
-    // 2. Esconde o botão e evita que ele saia no PDF
     buttons.forEach(btn => {
         btn.style.display = 'none';
         btn.setAttribute('data-html2canvas-ignore', 'true');
     });
 
-    // 3. Mostra a marca d'água
     if (watermark) watermark.classList.remove('hidden');
 
-    // 4. Força expansão completa para não cortar a tabela
     const originalHeight = element.style.height;
     const originalDisplay = element.style.display;
+    const originalWidth = element.style.width;
+    const originalMaxWidth = element.style.maxWidth;
 
     element.style.height = 'auto';
     element.style.display = 'block';
+
+    if (sectionId === 'diagramCard') {
+        element.style.width = '750px';
+        element.style.maxWidth = '750px';
+    }
 
     const wrappers = element.querySelectorAll('.overflow-x-auto');
     wrappers.forEach(w => {
@@ -1312,42 +1370,145 @@ function downloadSectionPDF(sectionId, filename) {
         w.style.overflow = 'visible';
     });
 
-    // 5. Aguarda meio segundo e tira a foto
+    const svgElement = element.querySelector('svg');
+    const diagramContainer = element.querySelector('#diagramContainer');
+    const flexWrapper = diagramContainer ? diagramContainer.parentElement : null;
+
+    let originalSvgClass = '';
+
+    if (sectionId === 'diagramCard' && svgElement && diagramContainer) {
+
+        originalSvgClass = svgElement.getAttribute('class') || '';
+
+        svgElement.setAttribute(
+            'class',
+            originalSvgClass.replace('w-full', '')
+        );
+
+        const viewBox = svgElement.getAttribute('viewBox')?.split(' ');
+
+        if (viewBox && viewBox.length >= 4) {
+
+            const vbWidth = parseFloat(viewBox[2]);
+            const vbHeight = parseFloat(viewBox[3]);
+
+            const targetWidth = 600;
+            const targetHeight = (vbHeight / vbWidth) * targetWidth;
+
+            svgElement.setAttribute('width', targetWidth);
+            svgElement.setAttribute('height', targetHeight);
+        }
+
+        // Guarda estados originais
+        if (flexWrapper) {
+            flexWrapper.dataset.originalDisplay = flexWrapper.style.display;
+            flexWrapper.dataset.originalJustify = flexWrapper.style.justifyContent;
+            flexWrapper.dataset.originalAlign = flexWrapper.style.alignItems;
+        }
+
+        diagramContainer.dataset.originalDisplay = diagramContainer.style.display;
+        diagramContainer.dataset.originalJustify = diagramContainer.style.justifyContent;
+        diagramContainer.dataset.originalAlign = diagramContainer.style.alignItems;
+
+        // Centralização real
+        if (flexWrapper) {
+            flexWrapper.style.display = 'flex';
+            flexWrapper.style.justifyContent = 'center';
+            flexWrapper.style.alignItems = 'center';
+        }
+
+        diagramContainer.style.display = 'flex';
+        diagramContainer.style.justifyContent = 'center';
+        diagramContainer.style.alignItems = 'center';
+
+        svgElement.style.display = 'block';
+        svgElement.style.margin = '0 auto';
+    }
+
     setTimeout(() => {
+
         html2pdf()
             .set({
-                margin: 5,
+                margin: 10,
                 filename: filename,
-                image: { type: 'jpeg', quality: 1 },
-                html2canvas: { scale: 3, useCORS: true, scrollX: 0, scrollY: 0 },
-                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                image: {
+                    type: 'jpeg',
+                    quality: 1
+                },
+                html2canvas: {
+                    scale: 2,
+                    useCORS: true,
+                    scrollY: 0,
+                    backgroundColor: '#ffffff'
+                },
+                jsPDF: {
+                    unit: 'mm',
+                    format: 'a4',
+                    orientation: 'portrait'
+                }
             })
             .from(element)
             .save()
             .then(() => {
-                restaurarSessao(); // Deu certo! Devolve tudo ao normal
+                restaurarSessao();
             })
             .catch((err) => {
                 console.error("Erro ao gerar PDF da seção:", err);
-                restaurarSessao(); // Deu erro! Mas devolve tudo ao normal do mesmo jeito
+                restaurarSessao();
             });
 
-        // Função auxiliar que garante que a interface volte ao normal
         function restaurarSessao() {
+
             buttons.forEach(btn => {
                 btn.style.display = '';
                 btn.removeAttribute('data-html2canvas-ignore');
             });
 
-            if (watermark) watermark.classList.add('hidden');
+            if (watermark) {
+                watermark.classList.add('hidden');
+            }
 
             element.style.height = originalHeight;
             element.style.display = originalDisplay;
+            element.style.width = originalWidth;
+            element.style.maxWidth = originalMaxWidth;
 
             wrappers.forEach(w => {
                 w.style.overflow = w.dataset.originalOverflow || '';
             });
+
+            if (sectionId === 'diagramCard' && svgElement && diagramContainer) {
+
+                svgElement.setAttribute('class', originalSvgClass);
+
+                svgElement.removeAttribute('width');
+                svgElement.removeAttribute('height');
+
+                svgElement.style.display = '';
+                svgElement.style.margin = '';
+
+                diagramContainer.style.display =
+                    diagramContainer.dataset.originalDisplay || '';
+
+                diagramContainer.style.justifyContent =
+                    diagramContainer.dataset.originalJustify || '';
+
+                diagramContainer.style.alignItems =
+                    diagramContainer.dataset.originalAlign || '';
+
+                if (flexWrapper) {
+                    flexWrapper.style.display =
+                        flexWrapper.dataset.originalDisplay || '';
+
+                    flexWrapper.style.justifyContent =
+                        flexWrapper.dataset.originalJustify || '';
+
+                    flexWrapper.style.alignItems =
+                        flexWrapper.dataset.originalAlign || '';
+                }
+            }
         }
+
     }, 500);
 }
 
@@ -1448,3 +1609,102 @@ function toggleHistory() {
 
 // 4. GATILHO AUTOMÁTICO: Força o histórico a aparecer sozinho assim que a página terminar de montar
 window.addEventListener('load', renderHistory);
+
+// ==================== MOTOR DE DIAGRAMA LÓGICO (SVG) ====================
+function renderLogicDiagram() {
+    const container = document.getElementById('diagramContainer');
+    if (!container) return;
+
+    const expression = document.getElementById('simplifiedExpression').innerText;
+
+    // Tratamento para resultados constantes
+    // Tratamento para resultados constantes
+    if (!expression || expression === '0' || expression === '1') {
+        // Puxa o idioma atual do seu dicionário
+        const lang = translations[currentLang];
+
+        // Pega as traduções (com um fallback seguro para português)
+        const textConstant = lang.constantSignal || "Sinal constante";
+        const textNoGates = lang.noGates || "Não requer portas lógicas.";
+
+        container.innerHTML = `<div class="text-gray-400 dark:text-gray-500 italic text-center w-full p-4">${textConstant} (${expression}). ${textNoGates}</div>`;
+        return;
+    }
+
+    const terms = expression.split(' + ');
+    const svgHeight = Math.max(300, terms.length * 110); // Aumenta a altura conforme a quantia de portas
+    const svgWidth = 800;
+
+    // Configurações de cores baseadas no Tailwind (Dark Mode Suportado)
+    const strokeColor = "currentColor";
+    const gateFill = "var(--tw-bg-opacity, transparent)"; // Fica transparente por padrão e o CSS cuida
+    const textClass = "font-mono font-bold text-sm fill-gray-800 dark:fill-gray-200";
+    const pathClass = "stroke-gray-800 dark:stroke-gray-300 stroke-2 fill-white dark:fill-[#252526]";
+    const wireClass = "stroke-blue-500 dark:stroke-[#4fc1ff] stroke-2 fill-none";
+
+    let svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${svgWidth} ${svgHeight}" class="w-full h-auto">`;
+
+    const orX = 600;
+    const orY = svgHeight / 2;
+
+    // 1. DESENHA A PORTA OR GIGANTE (Se houver mais de um termo)
+    if (terms.length > 1) {
+        svg += `<path d="M ${orX} ${orY - 40} Q ${orX + 20} ${orY} ${orX} ${orY + 40} C ${orX + 40} ${orY + 40} ${orX + 80} ${orY + 20} ${orX + 80} ${orY} C ${orX + 80} ${orY - 20} ${orX + 40} ${orY - 40} ${orX} ${orY - 40} Z" class="${pathClass}" />`;
+        svg += `<path d="M ${orX + 80} ${orY} L ${orX + 130} ${orY}" class="${wireClass}" />`;
+        svg += `<text x="${orX + 140}" y="${orY + 5}" class="${textClass} text-lg fill-blue-600 dark:fill-blue-400">S</text>`;
+    } else {
+        svg += `<path d="M 400 ${orY} L ${orX + 130} ${orY}" class="${wireClass}" />`;
+        svg += `<text x="${orX + 140}" y="${orY + 5}" class="${textClass} text-lg fill-blue-600 dark:fill-blue-400">S</text>`;
+    }
+
+    // 2. DESENHA AS PORTAS AND (Uma para cada agrupamento do SOP)
+    terms.forEach((term, i) => {
+        const andX = 350;
+        const andY = terms.length === 1 ? svgHeight / 2 : (i * (svgHeight / terms.length)) + (svgHeight / terms.length / 2);
+
+        // Roteamento do fio da porta AND até a porta OR
+        if (terms.length > 1) {
+            const orInY = orY - 25 + (50 / (terms.length - 1 || 1)) * i;
+            svg += `<path d="M ${andX + 60} ${andY} L 500 ${andY} L 500 ${orInY} L ${orX + 10} ${orInY}" class="${wireClass} rounded" />`;
+        }
+
+        // Porta AND shape
+        svg += `<path d="M ${andX} ${andY - 25} L ${andX + 35} ${andY - 25} A 25 25 0 0 1 ${andX + 35} ${andY + 25} L ${andX} ${andY + 25} Z" class="${pathClass}" />`;
+
+        // 3. DESENHA AS ENTRADAS E PORTAS NOT
+        let cleanTerm = term.replace(/[()]/g, '').trim();
+        const vars = cleanTerm.split('.').map(v => v.trim());
+
+        vars.forEach((v, j) => {
+            const isInverted = v.startsWith('~');
+            const varName = v.replace('~', '');
+
+            // Espaçamento vertical dos fios de entrada na porta AND
+            let inY = andY;
+            if (vars.length > 1) {
+                const spacing = 40 / (vars.length - 1);
+                inY = andY - 20 + (spacing * j);
+            }
+
+            svg += `<text x="50" y="${inY + 4}" class="${textClass}">${varName}</text>`;
+
+            if (isInverted) {
+                const notX = 180;
+                // Fio até o NOT
+                svg += `<path d="M 70 ${inY} L ${notX} ${inY}" class="${wireClass}" />`;
+                // Porta NOT (Triângulo)
+                svg += `<path d="M ${notX} ${inY - 12} L ${notX + 25} ${inY} L ${notX} ${inY + 12} Z" class="${pathClass}" />`;
+                // Bolha de inversão
+                svg += `<circle cx="${notX + 29}" cy="${inY}" r="4" class="${pathClass}" />`;
+                // Fio do NOT até o AND
+                svg += `<path d="M ${notX + 33} ${inY} L ${andX} ${inY}" class="${wireClass}" />`;
+            } else {
+                // Fio direto para o AND
+                svg += `<path d="M 70 ${inY} L ${andX} ${inY}" class="${wireClass}" />`;
+            }
+        });
+    });
+
+    svg += `</svg>`;
+    container.innerHTML = svg;
+}
