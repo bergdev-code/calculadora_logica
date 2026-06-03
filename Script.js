@@ -274,8 +274,15 @@ function translatePage() {
     document.getElementById("simplifiedTitle").textContent = lang.simplifiedTitle;
     document.getElementById("stepsTitle").textContent = lang.stepsTitle;
     document.getElementById("footerText").textContent = lang.footerText;
+
     const aboutUsEl = document.getElementById("aboutUsText");
     if (aboutUsEl) aboutUsEl.textContent = lang.aboutUs;
+
+    const btnDownloadEl = document.getElementById("btnDownloadText");
+    if (btnDownloadEl) btnDownloadEl.textContent = lang.savePDF;
+
+    const pdfDescEl = document.getElementById("pdfDescriptionText");
+    if (pdfDescEl) pdfDescEl.textContent = lang.pdfDescription;
 
     const btnCalc = document.getElementById("btnCalculate");
     const btnClr = document.getElementById("btnClear");
@@ -1150,24 +1157,22 @@ function downloadFullReport() {
     const btnPdf = document.getElementById('btnFullReport');
     const sopCard = document.getElementById('sopCard');
     const posCard = document.getElementById('posCard');
-
+    
     const watermarks = element.querySelectorAll('.watermark-logo');
     const innerButtons = element.querySelectorAll('button');
 
-    // Identifica o contêiner pai que segura o SOP e o POS juntos (a grade)
     const sopPosContainer = sopCard ? sopCard.parentElement : null;
 
     if (pdfCard) pdfCard.style.display = 'none';
     if (btnPdf) btnPdf.style.display = 'none';
-
+    
     innerButtons.forEach(btn => btn.style.display = 'none');
     watermarks.forEach(w => w.classList.remove('hidden'));
 
-    // A MÁGICA: Força a quebra de página empurrando o bloco para a página 2
-    if (sopPosContainer) {
+    // A MÁGICA: Força a quebra de página para 3 OU 4 variáveis
+    if (currentVarCount >= 3 && sopPosContainer) {
         sopPosContainer.style.pageBreakBefore = 'always';
         sopPosContainer.style.breakBefore = 'page';
-        // Garante que o conteúdo dentro dele também não se quebre no meio
         sopPosContainer.style.pageBreakInside = 'avoid';
         sopPosContainer.style.breakInside = 'avoid';
     }
@@ -1175,7 +1180,8 @@ function downloadFullReport() {
     const tableCells = element.querySelectorAll('td, th');
     let originalPaddings = [];
     let originalFonts = [];
-
+    
+    // A compactação de tamanho continua APENAS para 4 variáveis (para caber na largura)
     if (currentVarCount === 4) {
         tableCells.forEach((cell, index) => {
             originalPaddings[index] = cell.style.padding;
@@ -1185,14 +1191,13 @@ function downloadFullReport() {
         });
     }
 
-    // A configuração do PDF agora aceita nossa regra de CSS ('css')
     const opt = {
         margin: 0.3,
         filename: 'relatorio-logico.pdf',
         image: { type: 'jpeg', quality: 1 },
         html2canvas: { scale: 2, useCORS: true, scrollY: 0 },
         jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' },
-        pagebreak: { mode: ['css', 'legacy'] }
+        pagebreak: { mode: ['css', 'legacy'] } 
     };
 
     setTimeout(() => {
@@ -1214,14 +1219,15 @@ function downloadFullReport() {
             innerButtons.forEach(btn => btn.style.display = '');
             watermarks.forEach(w => w.classList.add('hidden'));
 
-            // Remove as regras de quebra de página para o site não ficar desconfigurado
-            if (sopPosContainer) {
+            // Remove as regras de quebra de página se foram aplicadas (3 ou 4 vars)
+            if (currentVarCount >= 3 && sopPosContainer) {
                 sopPosContainer.style.pageBreakBefore = '';
                 sopPosContainer.style.breakBefore = '';
                 sopPosContainer.style.pageBreakInside = '';
                 sopPosContainer.style.breakInside = '';
             }
 
+            // Restaura o tamanho das células (apenas 4 vars)
             if (currentVarCount === 4) {
                 tableCells.forEach((cell, index) => {
                     cell.style.padding = originalPaddings[index] || '';

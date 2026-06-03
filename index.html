@@ -475,13 +475,14 @@
                     <section id="pdfCard"
                         class="flex-none md:w-64 bg-white p-4 rounded-xl shadow-sm border border-gray-200 transition-colors duration-200 dark:bg-[#252526] dark:border-[#3c3c3c] flex flex-col justify-center text-center ml-auto">
 
-                        <p class="text-xs text-gray-500 dark:text-gray-400 mb-4 leading-snug">
-                            Salve um documento PDF com todas as tabelas, mapas e expressões simplificadas.
-                        </p>
+                        <p id="pdfDescriptionText" class="text-sm text-gray-500 mb-4 dark:text-gray-400">
+    Salve um documento PDF com todas as tabelas, mapas e expressões simplificadas.
+</p>
 
                         <button onclick="downloadFullReport()" id="btnFullReport"
                             class="w-full flex items-center justify-center gap-2 bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-600 text-white px-4 py-2.5 rounded-lg font-semibold transition-all shadow-md active:scale-95 text-sm">
-                            <i class="fas fa-file-pdf"></i> Baixar PDF
+                            <i class="fas fa-file-pdf"></i>
+                            <span id="btnDownloadText">Baixar PDF</span>
                         </button>
                     </section>
 
