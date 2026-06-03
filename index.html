@@ -9,6 +9,9 @@
 
     <script src="https://cdn.tailwindcss.com"></script>
 
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#000000">
+
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -476,8 +479,8 @@
                         class="flex-none md:w-64 bg-white p-4 rounded-xl shadow-sm border border-gray-200 transition-colors duration-200 dark:bg-[#252526] dark:border-[#3c3c3c] flex flex-col justify-center text-center ml-auto">
 
                         <p id="pdfDescriptionText" class="text-sm text-gray-500 mb-4 dark:text-gray-400">
-    Salve um documento PDF com todas as tabelas, mapas e expressões simplificadas.
-</p>
+                            Salve um documento PDF com todas as tabelas, mapas e expressões simplificadas.
+                        </p>
 
                         <button onclick="downloadFullReport()" id="btnFullReport"
                             class="w-full flex items-center justify-center gap-2 bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-600 text-white px-4 py-2.5 rounded-lg font-semibold transition-all shadow-md active:scale-95 text-sm">
@@ -552,40 +555,55 @@
                         </div>
                     </section>
 
-                    <section id="diagramCard" class="col-span-full bg-white dark:bg-[#1e1e1e] rounded-xl shadow-sm border border-gray-100 dark:border-[#2d2d2d] p-6 mb-6">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-bold flex items-center gap-2">
-                    <i class="fas fa-project-diagram text-indigo-500"></i>
-                    <span id="diagramTitleText">Diagrama Lógico</span>
-                </h2>
-                <button onclick="downloadSectionPDF('diagramCard', 'diagrama-logico.pdf')" class="text-gray-400 hover:text-indigo-500 transition-colors p-2" title="Download PDF">
-                    <i class="fas fa-download"></i>
-                </button>
-            </div>
-            
-            <div class="w-full overflow-x-auto bg-gray-50 dark:bg-[#252526] rounded-lg border border-gray-200 dark:border-[#3c3c3c] p-6 flex justify-center items-center min-h-[300px]">
-                <div id="diagramContainer" class="w-full max-w-[800px]"></div>
-            </div>
+                    <section id="diagramCard"
+                        class="col-span-full bg-white dark:bg-[#1e1e1e] rounded-xl shadow-sm border border-gray-100 dark:border-[#2d2d2d] p-6 mb-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="text-xl font-bold flex items-center gap-2">
+                                <i class="fas fa-project-diagram text-indigo-500"></i>
+                                <span id="diagramTitleText">Diagrama Lógico</span>
+                            </h2>
+                            <button onclick="downloadSectionPDF('diagramCard', 'diagrama-logico.pdf')"
+                                class="text-gray-400 hover:text-indigo-500 transition-colors p-2" title="Download PDF">
+                                <i class="fas fa-download"></i>
+                            </button>
+                        </div>
 
-            <div class="watermark-logo hidden mt-6 text-center text-[10px] text-gray-400 dark:text-gray-500 font-mono uppercase tracking-widest opacity-60">
-                SysLogic.com
-            </div>
-        </section>
+                        <div
+                            class="w-full overflow-x-auto bg-gray-50 dark:bg-[#252526] rounded-lg border border-gray-200 dark:border-[#3c3c3c] p-6 flex justify-center items-center min-h-[300px]">
+                            <div id="diagramContainer" class="w-full max-w-[800px]"></div>
+                        </div>
+
+                        <div
+                            class="watermark-logo hidden mt-6 text-center text-[10px] text-gray-400 dark:text-gray-500 font-mono uppercase tracking-widest opacity-60">
+                            SysLogic.com
+                        </div>
+                    </section>
 
                 </div>
             </div>
         </div>
     </main>
 
-   <footer class="bg-gray-100 border-t border-gray-200 py-8 mt-12 transition-colors duration-200 dark:bg-[#1e1e1e] dark:border-[#3c3c3c]">
+    <footer
+        class="bg-gray-100 border-t border-gray-200 py-8 mt-12 transition-colors duration-200 dark:bg-[#1e1e1e] dark:border-[#3c3c3c]">
         <div class="container mx-auto text-center text-gray-500 text-sm space-y-2">
             <p id="aboutUsText">
-                Sobre nós: Desenvolvido por 
-                <a href="https://github.com/bergdev-code" target="_blank" rel="noopener noreferrer" class="font-medium hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors duration-200">Bergson Sales</a>, 
-                <a href="https://github.com/Pedropontocom" target="_blank" rel="noopener noreferrer" class="font-medium hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors duration-200">Pedro Henrique</a>, 
-                <a href="https://github.com/pedrooboy11-commits" target="_blank" rel="noopener noreferrer" class="font-medium hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors duration-200">Pedro Conceição</a>, 
-                <a href="https://github.com/YuriCMD" target="_blank" rel="noopener noreferrer" class="font-medium hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors duration-200">Yuri Alexandre</a> e 
-                <a href="https://github.com/YuriLC05" target="_blank" rel="noopener noreferrer" class="font-medium hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors duration-200">Yuri Cortes</a>, 
+                Sobre nós: Desenvolvido por
+                <a href="https://github.com/bergdev-code" target="_blank" rel="noopener noreferrer"
+                    class="font-medium hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors duration-200">Bergson
+                    Sales</a>,
+                <a href="https://github.com/Pedropontocom" target="_blank" rel="noopener noreferrer"
+                    class="font-medium hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors duration-200">Pedro
+                    Henrique</a>,
+                <a href="https://github.com/pedrooboy11-commits" target="_blank" rel="noopener noreferrer"
+                    class="font-medium hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors duration-200">Pedro
+                    Conceição</a>,
+                <a href="https://github.com/YuriCMD" target="_blank" rel="noopener noreferrer"
+                    class="font-medium hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors duration-200">Yuri
+                    Alexandre</a> e
+                <a href="https://github.com/YuriLC05" target="_blank" rel="noopener noreferrer"
+                    class="font-medium hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors duration-200">Yuri
+                    Cortes</a>,
                 estudantes da instituição FPB - Faculdade Internacional da Paraíba 2026©
             </p>
             <p id="footerText">
@@ -593,6 +611,20 @@
             </p>
         </div>
     </footer>
+
+    <script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js')
+        .then(registration => {
+          console.log('Service Worker registado com sucesso!', registration.scope);
+        })
+        .catch(error => {
+          console.log('Falha ao registar o Service Worker:', error);
+        });
+    });
+  }
+</script>
 
     <script src="script.js"></script>
 </body>
